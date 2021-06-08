@@ -24,9 +24,9 @@ module Promoted
       end
 
       def self.log_request args={}, options={}
-        base_url = options[:base_url]
-        payload = prepare_for_logging(args)
-        send_request(payload, base_url)
+        endpoint = options[:endpoint]
+        payload  = prepare_for_logging(args)
+        send_request(payload, endpoint)
       end
 
       def self.prepare_for_logging args

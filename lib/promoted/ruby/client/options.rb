@@ -136,7 +136,6 @@ module Promoted
         end
 
         def user_info
-          byebug
           {
             user_id: user_id,
             log_user_id: log_user_id
