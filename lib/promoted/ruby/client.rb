@@ -1,7 +1,7 @@
 require "promoted/ruby/client/version"
-
 require 'faraday'
 require 'json'
+
 module Promoted
   module Ruby
     module Client

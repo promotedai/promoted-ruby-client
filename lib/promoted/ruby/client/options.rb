@@ -9,22 +9,24 @@ module Promoted
                       :uuid, :metrics_timeout_millis, :now_millis, :should_apply_treatment,
                       :view_id, :user_id, :insertion, :platform_id, :client_log_timestamp,
                       :event_api_timestamp, :request_id, :full_insertion, :use_case, :request
+                      :limit
 
         def initialize()
         end
 
         def set_request_params args = {}
           args = tranlate_args(args)
-          @request                 = args[:request]
+          @request                 = tranlate_args(args[:request])
           @delivery_timeout_millis = args[:delivery_timeout_millis] || DELIVERY_TIMEOUT_MILLIS
           @session_id              = args[:session_id]
-          # @user_id                 = args[:user_id]
-          # @log_user_id             = args[:log_user_id]
+          @user_id                 = args[:user_id]
+          @log_user_id             = args[:log_user_id]
           @view_id                 = args[:view_id]
+          @limit                   = args[:limit].to_i
           @perform_checks          = args[:perform_checks] || false
           @only_Log                = args[:only_Log] || false
           @uuid                    = args[:uuid]
-          @use_case                = 'FEED' #it's default at the moment will be dynamic later on.
+          @use_case                = args[:use_case] || 'FEED'
           @now_millis              = args[:now_millis] || Time.now.to_i
           @metrics_timeout_millis  = args[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
           @should_apply_treatment  = args[:should_apply_treatment] || false
@@ -33,11 +35,11 @@ module Promoted
           @platform_id             = args[:platform_id]
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
           @event_api_timestamp     = args[:event_api_timestamp]
-          @request_id              = args[:request_id] || SecureRandom.uuid
+          @request_id              = SecureRandom.uuid
         end
 
         def tranlate_args(args)
-          args.transform_keys(&:to_underscore).transform_keys(&:to_sym)
+          args.transform_keys(&:to_s).transform_keys(&:to_underscore).transform_keys(&:to_sym)
         rescue => e
           raise 'Unable to parse args. Please pass correct arguments. Must be JSON'
         end
@@ -56,6 +58,10 @@ module Promoted
 
         def client_log_timestamp
           @client_log_timestamp
+        end
+
+        def limit
+          @limit
         end
 
         def platform_id
@@ -158,14 +164,12 @@ module Promoted
             platform_id: platform_id,
             user_info: user_info,
             timing: timing,
-            request: request_params(include_insertion: false),
+            request: request,
             insertion: compact_insertions
           }
         end
 
         def request_params include_insertion: true
-          # return @request_params if @request_params
-          request
           @request_params = {
             platform_id: platform_id,
             user_info: user_info,
@@ -182,15 +186,18 @@ module Promoted
 
         def compact_insertions
           @compact_insertions = []
-          full_insertion.each_with_index do |insertion_obj, index|
+          insertions_to_compact = full_insertion
+          if limit
+            insertions_to_compact = insertions_to_compact[0..limit-1]
+          end
+          insertions_to_compact.each_with_index do |insertion_obj, index|
             insertion_obj = insertion_obj.transform_keys(&:to_underscore)
             insertion_obj = insertion_obj.transform_keys(&:to_sym)
             insertion_obj[:user_info]    = user_info
             insertion_obj[:timing]       = timing
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
-            insertion_obj[:position]     = index+1 # should start from 1
-
+            insertion_obj[:position]     = index
             @compact_insertions << insertion_obj
           end
           @compact_insertions
