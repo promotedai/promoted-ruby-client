@@ -177,8 +177,8 @@ module Promoted
           if limit
             insertions_to_compact = insertions_to_compact[0..limit-1]
           end
-          offset = request[:paging][:offset]
-          offset ||= 0
+          paging = request[:paging] || {}
+          offset = paging[:offset].to_i
           insertions_to_compact.each_with_index do |insertion_obj, index|
             # TODO - this does not look performant.
             insertion_obj = insertion_obj.transform_keys{ |key| key.to_s.to_underscore.to_sym }
