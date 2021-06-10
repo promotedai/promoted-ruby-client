@@ -152,7 +152,7 @@ module Promoted
           {
             user_info: user_info,
             timing: timing,
-            request: request,
+            request: [request],
             insertion: compact_insertions
           }
         end
