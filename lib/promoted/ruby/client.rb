@@ -21,6 +21,7 @@ module Promoted
       end
 
       def deliver payload={}
+        # TODO
       end
 
       def self.log_request args={}, options={}
@@ -49,8 +50,8 @@ module Promoted
       end
 
       def self.promoted_client_impl  params={}
-        #dummy implementation
-        #TODO will implement it in details
+        # Dummy implementation
+        # TODO will implement it in details
         perform_checks          = params[:perform_checks] || true
         only_Log                = params[:only_Log] || false
         uuid                    = params[:uuid]
@@ -63,7 +64,7 @@ module Promoted
   end
 end
 
-#dependent /libs
+# dependent /libs
 require "promoted/ruby/client/options"
 require 'byebug'
 require 'securerandom'

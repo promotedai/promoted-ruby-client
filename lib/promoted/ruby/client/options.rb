@@ -12,6 +12,7 @@ module Promoted
                       :limit
 
         def initialize()
+          # TODO
         end
 
         def set_request_params args = {}
@@ -43,7 +44,7 @@ module Promoted
         end
 
         def validate_request_paramas
-
+          # TODO
         end
 
         def request
@@ -73,8 +74,8 @@ module Promoted
           @session_id
         end
 
-        #A list of the response Insertions.  This list should be truncated
-        #based on limit.
+        # A list of the response Insertions.  This list should be truncated
+        # based on limit.
         def insertion
           @insertion
         end
@@ -86,16 +87,15 @@ module Promoted
           @log_user_id
         end
 
-        #A way to turn off logging.  Defaults to true.
+        # A way to turn off logging.  Defaults to true.
         def enabled?
           @enabled
         end
 
-         #Performs extra dev checks.  Safer but slower.  Defaults to true.
+        # Performs extra dev checks.  Safer but slower.  Defaults to true.
         def perform_checks?
           @perform_checks
         end
-
 
         # Default values to use on DeliveryRequests.
         def default_request_values
@@ -196,7 +196,7 @@ module Promoted
 end
 
 class String
-   # ruby mutation methods have the expectation to return self if a mutation occurred, nil otherwise. (see http://www.ruby-doc.org/core-1.9.3/String.html#method-i-gsub-21)
+   # Ruby mutation methods have the expectation to return self if a mutation occurred, nil otherwise. (see http://www.ruby-doc.org/core-1.9.3/String.html#method-i-gsub-21)
    def to_underscore!
      gsub!(/(.)([A-Z])/,'\1_\2')
      downcase!
