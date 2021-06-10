@@ -73,7 +73,7 @@ end
 request_input = {
   request: {
     user_info: { user_id: "912", log_user_id: "912191"},
-    useCase: "FEED",
+    use_case: "FEED",
     properties: {
       struct: {
         active: true
@@ -120,7 +120,7 @@ products = [
 input = {
   "request"=>{
     "user_info"=>{"user_id"=> "912", "log_user_id"=> "912191"},
-    "useCase"=>"FEED",
+    "use_case"=>"FEED",
     "properties"=>{
       "struct"=>{
         "active"=>true
@@ -136,7 +136,7 @@ Or inlined full request.
 input = {
   "request"=>{
     "user_info"=>{"user_id"=> "912", "log_user_id"=> "912191"},
-    "useCase"=>"FEED",
+    "use_case"=>"FEED",
     "properties"=>{
       "struct"=>{
         "active"=>true
