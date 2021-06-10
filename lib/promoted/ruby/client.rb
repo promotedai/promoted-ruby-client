@@ -33,7 +33,7 @@ module Promoted
       def self.prepare_for_logging args
         options.set_request_params(args)
         if options.perform_checks
-          Settings.check_that_log_ids_not_set(options)
+          Promoted::Ruby::Client::Settings.check_that_log_ids_not_set(args)
           pre_delivery_fillin_fields
         end
         options.log_request_params
@@ -66,5 +66,6 @@ end
 
 # dependent /libs
 require "promoted/ruby/client/options"
+require "promoted/ruby/client/settings"
 require 'byebug'
 require 'securerandom'

@@ -17,7 +17,7 @@ module Promoted
 
         def set_request_params args = {}
           args = translate_args(args)
-          @request                 = translate_args(args[:request])
+          @request                 = args[:request]
           @delivery_timeout_millis = args[:delivery_timeout_millis] || DELIVERY_TIMEOUT_MILLIS
           @session_id              = args[:session_id]
           @user_id                 = args[:user_id]

@@ -1,0 +1,33 @@
+SAMPLE_INPUT =  {
+  "request"=>{
+    "user_info"=>{"user_id"=> "912", "log_user_id"=> "91232"},
+    "useCase"=>"FEED",
+    "properties"=>{
+      "struct"=>{
+        "query"=>{}
+      }
+    }
+  },
+  "full_insertion"=>[
+    {
+      "content_id"=>"5b4a6512326bd9777abfabc34",
+      "properties"=>[]
+    },
+    {
+      "content_id"=>"5b4a6512326bd9777abfabcf",
+      "properties"=>[]
+    },
+    {
+      "content_id"=>"5b4a6512326bd9777abfabcf",
+      "properties"=>[]
+    },
+    {
+      "content_id"=>"5b4a6512326bd9777abfabcf",
+      "properties"=>[]
+    },
+    {
+      "content_id"=>"5b4a6512326bd9777abfabcf",
+      "properties"=>[]
+    }
+  ]
+}.freeze
