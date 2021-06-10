@@ -27,6 +27,10 @@ end
 
 `fullInsertion` - for `prepare_for_logging`, this is the current page of `Insertion`s with full `Insertion.properties` filled with the item details.  For v1 integrations, it is fine to not fill in the full properties.
 
+## Pagination
+
+The `prepare_for_logging` call assumes the client has already handled pagination.  It needs a `Request.paging.offset` to be passed in for the number of items deep that the page is.
+
 ## Example to run the client
 
 1. Clone the repo on your local machine
@@ -78,6 +82,10 @@ request_input = {
   request: {
     user_info: { user_id: "912", log_user_id: "912191"},
     use_case: "FEED",
+    paging: {
+      offset: 10,
+      size: 5
+    },
     properties: {
       struct: {
         active: true
@@ -93,7 +101,7 @@ log_request.to_json
 
 `log_request.to_json` returns a result that looks like the following
 ```
-=> "{\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623302267},\"request\":[{\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"use_case\":\"FEED\",\"properties\":{\"struct\":{\"active\":true}}}],\"insertion\":[{\"content_id\":\"123\",\"properties\":{\"struct\":{\"product\":{\"type\":\"SHOE\",\"name\":\"Blue shoe\",\"total_sales\":1000}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623302267},\"insertion_id\":\"cf4c3dfb-9e08-4ea2-84b5-c44cc222e686\",\"request_id\":\"f4c5173d-2131-4b97-9c3c-a7cbe37393e9\",\"position\":0},{\"content_id\":\"124\",\"properties\":{\"struct\":{\"product\":{\"type\":\"SHIRT\",\"name\":\"Green shirt\",\"total_sales\":800}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623302267},\"insertion_id\":\"696d0f0b-ec04-4627-8f50-39e7ca632ee0\",\"request_id\":\"f4c5173d-2131-4b97-9c3c-a7cbe37393e9\",\"position\":1},{\"content_id\":\"125\",\"properties\":{\"struct\":{\"product\":{\"type\":\"DRESS\",\"name\":\"Red dress\",\"total_sales\":1200}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623302267},\"insertion_id\":\"71256116-2357-493e-8662-85681f358a94\",\"request_id\":\"f4c5173d-2131-4b97-9c3c-a7cbe37393e9\",\"position\":2}]}"
+=> "{\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"request\":[{\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"use_case\":\"FEED\",\"paging\":{\"offset\":10,\"size\":10},\"properties\":{\"struct\":{\"active\":true}}}],\"insertion\":[{\"content_id\":\"123\",\"properties\":{\"struct\":{\"product\":{\"type\":\"SHOE\",\"name\":\"Blue shoe\",\"total_sales\":1000}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"insertion_id\":\"a87e1b57-a574-424f-8af6-10e0250aa7ab\",\"request_id\":\"54ff4884-2192-4180-8c72-a805a436980f\",\"position\":10},{\"content_id\":\"124\",\"properties\":{\"struct\":{\"product\":{\"type\":\"SHIRT\",\"name\":\"Green shirt\",\"total_sales\":800}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"insertion_id\":\"4495f72a-8101-4cb8-94ce-4db76839b8b6\",\"request_id\":\"54ff4884-2192-4180-8c72-a805a436980f\",\"position\":11},{\"content_id\":\"125\",\"properties\":{\"struct\":{\"product\":{\"type\":\"DRESS\",\"name\":\"Red dress\",\"total_sales\":1200}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"insertion_id\":\"d1e4f3f6-1783-4059-8fab-fdf2ba343cdf\",\"request_id\":\"54ff4884-2192-4180-8c72-a805a436980f\",\"position\":12}]}"
 ```
 
 ## Other input syntaxes

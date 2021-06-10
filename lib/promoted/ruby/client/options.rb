@@ -177,6 +177,8 @@ module Promoted
           if limit
             insertions_to_compact = insertions_to_compact[0..limit-1]
           end
+          offset = request[:paging][:offset]
+          offset ||= 0
           insertions_to_compact.each_with_index do |insertion_obj, index|
             # TODO - this does not look performant.
             insertion_obj = insertion_obj.transform_keys{ |key| key.to_s.to_underscore.to_sym }
@@ -184,7 +186,7 @@ module Promoted
             insertion_obj[:timing]       = timing
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
-            insertion_obj[:position]     = index
+            insertion_obj[:position]     = offset + index
             @compact_insertions << insertion_obj
           end
           @compact_insertions
