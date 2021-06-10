@@ -9,7 +9,6 @@ module Promoted
                       :uuid, :metrics_timeout_millis, :now_millis, :should_apply_treatment,
                       :view_id, :user_id, :insertion, :client_log_timestamp,
                       :request_id, :full_insertion, :use_case, :request
-                      :limit
 
         def initialize()
           # TODO
@@ -23,7 +22,6 @@ module Promoted
           @user_id                 = args[:user_id]
           @log_user_id             = args[:log_user_id]
           @view_id                 = args[:view_id]
-          @limit                   = args[:limit].to_i
           @perform_checks          = args[:perform_checks] || false
           @only_Log                = args[:only_Log] || false
           @uuid                    = args[:uuid]
@@ -55,10 +53,6 @@ module Promoted
           @client_log_timestamp
         end
 
-        def limit
-          @limit
-        end
-
         def view_id
           @view_id
         end
@@ -74,8 +68,9 @@ module Promoted
           @session_id
         end
 
-        # A list of the response Insertions.  This list should be truncated
-        # based on limit.
+        # A list of the response Insertions.  This client expects lists to be truncated
+        # already to request.paging.size.  If not truncated, this client will truncate
+        # the list.
         def insertion
           @insertion
         end
@@ -170,14 +165,14 @@ module Promoted
           @request_params
         end
 
-
         def compact_insertions
           @compact_insertions = []
           insertions_to_compact = full_insertion
-          if limit
-            insertions_to_compact = insertions_to_compact[0..limit-1]
-          end
           paging = request[:paging] || {}
+          size = paging[:size]
+          unless size.nil? || size == 0
+            insertions_to_compact = insertions_to_compact[0..size-1]
+          end
           offset = paging[:offset].to_i
           insertions_to_compact.each_with_index do |insertion_obj, index|
             # TODO - this does not look performant.
