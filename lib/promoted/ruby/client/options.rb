@@ -7,16 +7,17 @@ module Promoted
       class Options
         attr_accessor :delivery_timeout_millis, :session_id, :perform_checks,
                       :uuid, :metrics_timeout_millis, :now_millis, :should_apply_treatment,
-                      :view_id, :user_id, :insertion, :platform_id, :client_log_timestamp,
-                      :event_api_timestamp, :request_id, :full_insertion, :use_case, :request
+                      :view_id, :user_id, :insertion, :client_log_timestamp,
+                      :request_id, :full_insertion, :use_case, :request
                       :limit
 
         def initialize()
+          # TODO
         end
 
         def set_request_params args = {}
-          args = tranlate_args(args)
-          @request                 = tranlate_args(args[:request])
+          args = translate_args(args)
+          @request                 = translate_args(args[:request])
           @delivery_timeout_millis = args[:delivery_timeout_millis] || DELIVERY_TIMEOUT_MILLIS
           @session_id              = args[:session_id]
           @user_id                 = args[:user_id]
@@ -32,28 +33,22 @@ module Promoted
           @should_apply_treatment  = args[:should_apply_treatment] || false
           @full_insertion          = args[:full_insertion]
           @insertion               = args[:insertion] || []
-          @platform_id             = args[:platform_id]
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
-          @event_api_timestamp     = args[:event_api_timestamp]
           @request_id              = SecureRandom.uuid
         end
 
-        def tranlate_args(args)
+        def translate_args(args)
           args.transform_keys(&:to_s).transform_keys(&:to_underscore).transform_keys(&:to_sym)
         rescue => e
           raise 'Unable to parse args. Please pass correct arguments. Must be JSON'
         end
 
-        def validate_request_paramas
-
+        def validate_request_params
+          # TODO
         end
 
         def request
           @request
-        end
-
-        def event_api_timestamp
-          @event_api_timestamp
         end
 
         def client_log_timestamp
@@ -62,10 +57,6 @@ module Promoted
 
         def limit
           @limit
-        end
-
-        def platform_id
-          @platform_id
         end
 
         def view_id
@@ -83,8 +74,8 @@ module Promoted
           @session_id
         end
 
-        #A list of the response Insertions.  This list should be truncated
-        #based on limit.
+        # A list of the response Insertions.  This list should be truncated
+        # based on limit.
         def insertion
           @insertion
         end
@@ -96,16 +87,15 @@ module Promoted
           @log_user_id
         end
 
-        #A way to turn off logging.  Defaults to true.
+        # A way to turn off logging.  Defaults to true.
         def enabled?
           @enabled
         end
 
-         #Performs extra dev checks.  Safer but slower.  Defaults to true.
+        # Performs extra dev checks.  Safer but slower.  Defaults to true.
         def perform_checks?
           @perform_checks
         end
-
 
         # Default values to use on DeliveryRequests.
         def default_request_values
@@ -150,8 +140,7 @@ module Promoted
 
         def timing
           @timing = {
-            client_log_timestamp: client_log_timestamp,
-            event_api_timestamp: event_api_timestamp
+            client_log_timestamp: client_log_timestamp
           }
         end
 
@@ -161,17 +150,15 @@ module Promoted
 
         def log_request_params
           {
-            platform_id: platform_id,
             user_info: user_info,
             timing: timing,
-            request: request,
+            request: [request],
             insertion: compact_insertions
           }
         end
 
         def request_params include_insertion: true
           @request_params = {
-            platform_id: platform_id,
             user_info: user_info,
             timing: timing,
             request_id: request_id,
@@ -191,8 +178,8 @@ module Promoted
             insertions_to_compact = insertions_to_compact[0..limit-1]
           end
           insertions_to_compact.each_with_index do |insertion_obj, index|
-            insertion_obj = insertion_obj.transform_keys(&:to_underscore)
-            insertion_obj = insertion_obj.transform_keys(&:to_sym)
+            # TODO - this does not look performant.
+            insertion_obj = insertion_obj.transform_keys{ |key| key.to_s.to_underscore.to_sym }
             insertion_obj[:user_info]    = user_info
             insertion_obj[:timing]       = timing
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
@@ -209,7 +196,7 @@ module Promoted
 end
 
 class String
-   # ruby mutation methods have the expectation to return self if a mutation occurred, nil otherwise. (see http://www.ruby-doc.org/core-1.9.3/String.html#method-i-gsub-21)
+   # Ruby mutation methods have the expectation to return self if a mutation occurred, nil otherwise. (see http://www.ruby-doc.org/core-1.9.3/String.html#method-i-gsub-21)
    def to_underscore!
      gsub!(/(.)([A-Z])/,'\1_\2')
      downcase!
