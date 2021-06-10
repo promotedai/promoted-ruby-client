@@ -8,7 +8,7 @@ module Promoted
         attr_accessor :delivery_timeout_millis, :session_id, :perform_checks,
                       :uuid, :metrics_timeout_millis, :now_millis, :should_apply_treatment,
                       :view_id, :user_id, :insertion, :client_log_timestamp,
-                      :event_api_timestamp, :request_id, :full_insertion, :use_case, :request
+                      :request_id, :full_insertion, :use_case, :request
                       :limit
 
         def initialize()
@@ -33,7 +33,6 @@ module Promoted
           @full_insertion          = args[:full_insertion]
           @insertion               = args[:insertion] || []
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
-          @event_api_timestamp     = args[:event_api_timestamp]
           @request_id              = SecureRandom.uuid
         end
 
@@ -49,10 +48,6 @@ module Promoted
 
         def request
           @request
-        end
-
-        def event_api_timestamp
-          @event_api_timestamp
         end
 
         def client_log_timestamp
@@ -145,8 +140,7 @@ module Promoted
 
         def timing
           @timing = {
-            client_log_timestamp: client_log_timestamp,
-            event_api_timestamp: event_api_timestamp
+            client_log_timestamp: client_log_timestamp
           }
         end
 
