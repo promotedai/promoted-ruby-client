@@ -7,7 +7,7 @@ module Promoted
       class Options
         attr_accessor :delivery_timeout_millis, :session_id, :perform_checks,
                       :uuid, :metrics_timeout_millis, :now_millis, :should_apply_treatment,
-                      :view_id, :user_id, :insertion, :platform_id, :client_log_timestamp,
+                      :view_id, :user_id, :insertion, :client_log_timestamp,
                       :event_api_timestamp, :request_id, :full_insertion, :use_case, :request
                       :limit
 
@@ -32,7 +32,6 @@ module Promoted
           @should_apply_treatment  = args[:should_apply_treatment] || false
           @full_insertion          = args[:full_insertion]
           @insertion               = args[:insertion] || []
-          @platform_id             = args[:platform_id]
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
           @event_api_timestamp     = args[:event_api_timestamp]
           @request_id              = SecureRandom.uuid
@@ -62,10 +61,6 @@ module Promoted
 
         def limit
           @limit
-        end
-
-        def platform_id
-          @platform_id
         end
 
         def view_id
@@ -161,7 +156,6 @@ module Promoted
 
         def log_request_params
           {
-            platform_id: platform_id,
             user_info: user_info,
             timing: timing,
             request: request,
@@ -171,7 +165,6 @@ module Promoted
 
         def request_params include_insertion: true
           @request_params = {
-            platform_id: platform_id,
             user_info: user_info,
             timing: timing,
             request_id: request_id,
