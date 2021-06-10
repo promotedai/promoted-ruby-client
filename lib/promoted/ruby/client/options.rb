@@ -191,8 +191,8 @@ module Promoted
             insertions_to_compact = insertions_to_compact[0..limit-1]
           end
           insertions_to_compact.each_with_index do |insertion_obj, index|
-            insertion_obj = insertion_obj.transform_keys(&:to_underscore)
-            insertion_obj = insertion_obj.transform_keys(&:to_sym)
+            # TODO - this does not look performant.
+            insertion_obj = insertion_obj.transform_keys{ |key| key.to_s.to_underscore.to_sym }
             insertion_obj[:user_info]    = user_info
             insertion_obj[:timing]       = timing
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
