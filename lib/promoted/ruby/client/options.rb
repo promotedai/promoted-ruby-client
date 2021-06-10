@@ -17,7 +17,7 @@ module Promoted
 
         def set_request_params args = {}
           args = tranlate_args(args)
-          @request                 = tranlate_args(args[:request])
+          @request                 = translate_args(args[:request])
           @delivery_timeout_millis = args[:delivery_timeout_millis] || DELIVERY_TIMEOUT_MILLIS
           @session_id              = args[:session_id]
           @user_id                 = args[:user_id]
@@ -37,13 +37,13 @@ module Promoted
           @request_id              = SecureRandom.uuid
         end
 
-        def tranlate_args(args)
+        def translate_args(args)
           args.transform_keys(&:to_s).transform_keys(&:to_underscore).transform_keys(&:to_sym)
         rescue => e
           raise 'Unable to parse args. Please pass correct arguments. Must be JSON'
         end
 
-        def validate_request_paramas
+        def validate_request_params
           # TODO
         end
 
