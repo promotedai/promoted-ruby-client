@@ -29,9 +29,14 @@ end
 
 ## Pagination
 
-The `prepare_for_logging` call assumes the client has already handled pagination.  It needs a `Request.paging.offset` to be passed in for the number of items deep that the page is.
+The `prepare_for_logging` call assumes the client has already handled pagination.  It needs a `Request.paging.from` to be passed in for the number of items deep that the page is.
 
 ## Example to run the client
+
+Install our Ruby client.
+`promoted-ruby-client (0.1.0)`
+
+Or 
 
 1. Clone the repo on your local machine
 2. `cd promoted-ruby-client`
@@ -83,7 +88,7 @@ request_input = {
     user_info: { user_id: "912", log_user_id: "912191"},
     use_case: "FEED",
     paging: {
-      offset: 10,
+      from: 10,
       size: 5
     },
     properties: {
@@ -101,7 +106,7 @@ log_request.to_json
 
 `log_request.to_json` returns a result that looks like the following
 ```
-=> "{\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"request\":[{\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"use_case\":\"FEED\",\"paging\":{\"offset\":10,\"size\":10},\"properties\":{\"struct\":{\"active\":true}}}],\"insertion\":[{\"content_id\":\"123\",\"properties\":{\"struct\":{\"product\":{\"type\":\"SHOE\",\"name\":\"Blue shoe\",\"total_sales\":1000}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"insertion_id\":\"a87e1b57-a574-424f-8af6-10e0250aa7ab\",\"request_id\":\"54ff4884-2192-4180-8c72-a805a436980f\",\"position\":10},{\"content_id\":\"124\",\"properties\":{\"struct\":{\"product\":{\"type\":\"SHIRT\",\"name\":\"Green shirt\",\"total_sales\":800}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"insertion_id\":\"4495f72a-8101-4cb8-94ce-4db76839b8b6\",\"request_id\":\"54ff4884-2192-4180-8c72-a805a436980f\",\"position\":11},{\"content_id\":\"125\",\"properties\":{\"struct\":{\"product\":{\"type\":\"DRESS\",\"name\":\"Red dress\",\"total_sales\":1200}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"insertion_id\":\"d1e4f3f6-1783-4059-8fab-fdf2ba343cdf\",\"request_id\":\"54ff4884-2192-4180-8c72-a805a436980f\",\"position\":12}]}"
+=> "{\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"request\":[{\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"use_case\":\"FEED\",\"paging\":{\"from\":10,\"size\":10},\"properties\":{\"struct\":{\"active\":true}}}],\"insertion\":[{\"content_id\":\"123\",\"properties\":{\"struct\":{\"product\":{\"type\":\"SHOE\",\"name\":\"Blue shoe\",\"total_sales\":1000}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"insertion_id\":\"a87e1b57-a574-424f-8af6-10e0250aa7ab\",\"request_id\":\"54ff4884-2192-4180-8c72-a805a436980f\",\"position\":10},{\"content_id\":\"124\",\"properties\":{\"struct\":{\"product\":{\"type\":\"SHIRT\",\"name\":\"Green shirt\",\"total_sales\":800}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"insertion_id\":\"4495f72a-8101-4cb8-94ce-4db76839b8b6\",\"request_id\":\"54ff4884-2192-4180-8c72-a805a436980f\",\"position\":11},{\"content_id\":\"125\",\"properties\":{\"struct\":{\"product\":{\"type\":\"DRESS\",\"name\":\"Red dress\",\"total_sales\":1200}}},\"user_info\":{\"user_id\":\"912\",\"log_user_id\":\"912191\"},\"timing\":{\"client_log_timestamp\":1623306198},\"insertion_id\":\"d1e4f3f6-1783-4059-8fab-fdf2ba343cdf\",\"request_id\":\"54ff4884-2192-4180-8c72-a805a436980f\",\"position\":12}]}"
 ```
 
 ## Other input syntaxes
