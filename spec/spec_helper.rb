@@ -1,5 +1,6 @@
 require "bundler/setup"
 require "promoted/ruby/client"
+require "shared/constants"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
