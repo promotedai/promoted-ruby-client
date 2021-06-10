@@ -18,10 +18,14 @@ end
 # Done async
 def log_request items
   log_request = Promoted::Ruby::Client.prepare_for_logging(input)
-  # Send JSON to Event API.
+  # Send JSON to Metrics API.
   log_to_promoted_event_api(log_request)
 end
 ```
+
+## Naming details
+
+`fullInsertion` - for `prepare_for_logging`, this is the current page of `Insertion`s with full `Insertion.properties` filled with the item details.  For v1 integrations, it is fine to not fill in the full properties.
 
 ## Example to run the client
 
