@@ -36,7 +36,7 @@ The `prepare_for_logging` call assumes the client has already handled pagination
 Install our Ruby client.
 `promoted-ruby-client (0.1.0)`
 
-Or 
+Or
 
 1. Clone the repo on your local machine
 2. `cd promoted-ruby-client`
@@ -89,6 +89,37 @@ request_input = {
     use_case: "FEED",
     paging: {
       offset: 10,
+      size: 5
+    },
+    properties: {
+      struct: {
+        active: true
+      }
+    }
+  },
+  fullInsertion: to_insertions(products)
+}
+
+log_request = Promoted::Ruby::Client.prepare_for_logging(request_input)
+log_request.to_json
+```
+
+## Pass a custom function for compact insertion
+```
+# define a function using proc and it should use one argument.
+# Example
+compact_func = Proc.new do |insertion|
+  insertion.delete(:properties)
+  insertion
+end
+
+request_input = {
+  compact_func: compact_func,
+  request: {
+    user_info: { user_id: "912", log_user_id: "912191"},
+    use_case: "FEED",
+    paging: {
+      from: 10,
       size: 5
     },
     properties: {
