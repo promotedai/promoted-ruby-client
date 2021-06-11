@@ -8,31 +8,29 @@ module Promoted
         attr_accessor :delivery_timeout_millis, :session_id, :perform_checks,
                       :uuid, :metrics_timeout_millis, :now_millis, :should_apply_treatment,
                       :view_id, :user_id, :insertion, :client_log_timestamp,
-                      :request_id, :full_insertion, :use_case, :request
+                      :request_id, :full_insertion, :use_case, :request, :compact_func
 
-        def initialize()
-          # TODO
-        end
+        def initialize;end
 
         def set_request_params args = {}
           args = translate_args(args)
-          @request                 = args[:request]
-          @delivery_timeout_millis = args[:delivery_timeout_millis] || DELIVERY_TIMEOUT_MILLIS
-          @session_id              = args[:session_id]
-          @user_id                 = args[:user_id]
-          @log_user_id             = args[:log_user_id]
-          @view_id                 = args[:view_id]
+          @request                 = args[:request] || {}
+          @session_id              = request[:session_id]
+          @user_id                 = request[:user_id]
+          @log_user_id             = request[:log_user_id]
+          @view_id                 = request[:view_id]
+          @only_Log                = request[:only_Log] || false
           @perform_checks          = args[:perform_checks] || false
-          @only_Log                = args[:only_Log] || false
           @uuid                    = args[:uuid]
-          @use_case                = args[:use_case] || 'FEED'
           @now_millis              = args[:now_millis] || Time.now.to_i
+          @delivery_timeout_millis = args[:delivery_timeout_millis] || DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = args[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
           @should_apply_treatment  = args[:should_apply_treatment] || false
           @full_insertion          = args[:full_insertion]
-          @insertion               = args[:insertion] || []
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
+          @use_case                = Promoted::Ruby::Client::USE_CASES[args[:use_case]] || 'FEED'
           @request_id              = SecureRandom.uuid
+          @compact_func            = args[:compact_func]
         end
 
         def translate_args(args)
@@ -47,6 +45,10 @@ module Promoted
 
         def request
           @request
+        end
+
+        def compact_func
+          @compact_func
         end
 
         def client_log_timestamp
@@ -166,25 +168,24 @@ module Promoted
         end
 
         def compact_insertions
-          @compact_insertions = []
-          insertions_to_compact = full_insertion
-          paging = request[:paging] || {}
-          size = paging[:size]
-          unless size.nil? || size == 0
-            insertions_to_compact = insertions_to_compact[0..size-1]
-          end
-          offset = paging[:offset].to_i
+          @insertion            = [] # insertion should be set according to the compact insertion
+          paging                = request[:paging] || {}
+          size                  = paging[:size] ? paging[:size].to_i : 0
+          offset                = paging[:offset].to_i
+          insertions_to_compact = full_insertion[from..size-1]
+
           insertions_to_compact.each_with_index do |insertion_obj, index|
             # TODO - this does not look performant.
-            insertion_obj = insertion_obj.transform_keys{ |key| key.to_s.to_underscore.to_sym }
+            insertion_obj                = insertion_obj.transform_keys{ |key| key.to_s.to_underscore.to_sym }
             insertion_obj[:user_info]    = user_info
             insertion_obj[:timing]       = timing
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
-            insertion_obj[:position]     = offset + index
-            @compact_insertions << insertion_obj
+            insertion_obj[:position]     = from + index
+            insertion_obj                = @compact_func.call(insertion_obj) if @compact_func
+            @insertion << insertion_obj
           end
-          @compact_insertions
+          @insertion
         end
 
       end
@@ -204,3 +205,4 @@ class String
    end
 end
 require 'securerandom'
+require "promoted/ruby/client/defaults"

@@ -10,7 +10,7 @@ RSpec.describe Promoted::Ruby::Client do
 
   context "prepare_for_logging when no paging.size is set" do
     let!(:input_with_limit) do
-      dup_input = input.dup
+      dup_input = Marshal.load(Marshal.dump(input))
       dup_request = dup_input["request"].dup
       dup_input[:request] = dup_request
       dup_request[:paging] = {size: 2}
