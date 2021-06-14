@@ -11,7 +11,8 @@ module Promoted
                    'CATEGORY_CONTENT'=> 7,
                    'MY_CONTENT'=> 8,
                    'MY_SAVED_CONTENT'=> 9,
-                   'SELLER_CONTENT'=> 10}
+                   'SELLER_CONTENT'=> 10,
+                   'DISCOVER'=> 11}
     end
   end
 end
