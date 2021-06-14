@@ -20,6 +20,7 @@ module Promoted
           @log_user_id             = request[:log_user_id]
           @view_id                 = request[:view_id]
           @only_Log                = request[:only_Log] || false
+          @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'FEED'
           @perform_checks          = args[:perform_checks] || false
           @uuid                    = args[:uuid]
           @now_millis              = args[:now_millis] || Time.now.to_i
@@ -28,7 +29,6 @@ module Promoted
           @should_apply_treatment  = args[:should_apply_treatment] || false
           @full_insertion          = args[:full_insertion]
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
-          @use_case                = Promoted::Ruby::Client::USE_CASES[args[:use_case]] || 'FEED'
           @request_id              = SecureRandom.uuid
           @compact_func            = args[:compact_func]
         end
@@ -177,6 +177,7 @@ module Promoted
           insertions_to_compact.each_with_index do |insertion_obj, index|
             # TODO - this does not look performant.
             insertion_obj                = insertion_obj.transform_keys{ |key| key.to_s.to_underscore.to_sym }
+            insertion_obj                = Hash[insertion_obj]
             insertion_obj[:user_info]    = user_info
             insertion_obj[:timing]       = timing
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID

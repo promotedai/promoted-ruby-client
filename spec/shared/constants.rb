@@ -1,7 +1,7 @@
 SAMPLE_INPUT =  {
   "request"=>{
     "user_info"=>{"user_id"=> "912", "log_user_id"=> "91232"},
-    "useCase"=>"FEED",
+    "use_case"=>"FEED",
     "properties"=>{
       "struct"=>{
         "query"=>{}
@@ -28,6 +28,115 @@ SAMPLE_INPUT =  {
     {
       "content_id"=>"5b4a6512326bd9777abfabcf",
       "properties"=>[]
+    }
+  ]
+}.freeze
+
+SAMPLE_INPUT_WITH_PROP =  {
+  "request"=>{
+    "user_info"=>{"user_id"=> "912", "log_user_id"=> "91232"},
+    "use_case"=>"FEED",
+    "properties"=>{
+      "struct"=>{
+        "query"=>{}
+      }
+    }
+  },
+  "full_insertion"=>[
+    {
+      "content_id"=>"5b4a6512326bd9777abfabc34",
+      "properties"=>{
+        "invitesRequired"=>0,
+        "shouldDiscountAddons"=>false,
+        "tabletShowsPromotionDiscount"=>false,
+        "totalUses"=>738,
+        "isArchived"=>false,
+        "showActiveTimePeriodCountdown"=>false,
+        "applyTaxToSnackpassContribution"=>false,
+        "clientShowsRemainingUses"=>false,
+        "isKioskEligible"=>false,
+        "nonCombinable"=>false,
+        "lastUsedAt"=>"2021-05-24T22:35:31.149Z",
+        "lastPurchaseAt"=>"2021-05-24T22:35:31.214Z",
+        "firstPromotionUses"=>0,
+        "happyHourTimeDescription"=>nil
+      }
+    },
+    {
+      "content_id"=>"5b4a6512326bd9777abfabcf",
+      "properties"=>{
+        "invitesRequired"=>0,
+        "shouldDiscountAddons"=>false,
+        "tabletShowsPromotionDiscount"=>false,
+        "totalUses"=>738,
+        "isArchived"=>false,
+        "showActiveTimePeriodCountdown"=>false,
+        "applyTaxToSnackpassContribution"=>false,
+        "clientShowsRemainingUses"=>false,
+        "isKioskEligible"=>false,
+        "nonCombinable"=>false,
+        "lastUsedAt"=>"2021-05-24T22:35:31.149Z",
+        "lastPurchaseAt"=>"2021-05-24T22:35:31.214Z",
+        "firstPromotionUses"=>0,
+        "happyHourTimeDescription"=>nil
+      }
+    },
+    {
+      "content_id"=>"5b4a6512326bd9777abfabcf",
+      "properties"=>{
+        "invitesRequired"=>0,
+        "shouldDiscountAddons"=>false,
+        "tabletShowsPromotionDiscount"=>false,
+        "totalUses"=>738,
+        "isArchived"=>false,
+        "showActiveTimePeriodCountdown"=>false,
+        "applyTaxToSnackpassContribution"=>false,
+        "clientShowsRemainingUses"=>false,
+        "isKioskEligible"=>false,
+        "nonCombinable"=>false,
+        "lastUsedAt"=>"2021-05-24T22:35:31.149Z",
+        "lastPurchaseAt"=>"2021-05-24T22:35:31.214Z",
+        "firstPromotionUses"=>0,
+        "happyHourTimeDescription"=>nil
+      }
+    },
+    {
+      "content_id"=>"5b4a6512326bd9777abfabcf",
+      "properties"=>{
+        "invitesRequired"=>0,
+        "shouldDiscountAddons"=>false,
+        "tabletShowsPromotionDiscount"=>false,
+        "totalUses"=>738,
+        "isArchived"=>false,
+        "showActiveTimePeriodCountdown"=>false,
+        "applyTaxToSnackpassContribution"=>false,
+        "clientShowsRemainingUses"=>false,
+        "isKioskEligible"=>false,
+        "nonCombinable"=>false,
+        "lastUsedAt"=>"2021-05-24T22:35:31.149Z",
+        "lastPurchaseAt"=>"2021-05-24T22:35:31.214Z",
+        "firstPromotionUses"=>0,
+        "happyHourTimeDescription"=>nil
+      }
+    },
+    {
+      "content_id"=>"5b4a6512326bd9777abfabcf",
+      "properties"=>{
+        "invitesRequired"=>0,
+        "shouldDiscountAddons"=>false,
+        "tabletShowsPromotionDiscount"=>false,
+        "totalUses"=>738,
+        "isArchived"=>false,
+        "showActiveTimePeriodCountdown"=>false,
+        "applyTaxToSnackpassContribution"=>false,
+        "clientShowsRemainingUses"=>false,
+        "isKioskEligible"=>false,
+        "nonCombinable"=>false,
+        "lastUsedAt"=>"2021-05-24T22:35:31.149Z",
+        "lastPurchaseAt"=>"2021-05-24T22:35:31.214Z",
+        "firstPromotionUses"=>0,
+        "happyHourTimeDescription"=>nil
+      }
     }
   ]
 }.freeze
