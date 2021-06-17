@@ -1,7 +1,7 @@
 module Promoted
   module Ruby
     module Client
-      DELIVERY_TIMEOUT_MILLIS = 30000
+      DEFAULT_DELIVERY_TIMEOUT_MILLIS = 30000
       DEFAULT_METRICS_TIMEOUT_MILLIS = 250
 
       class Options
@@ -24,7 +24,7 @@ module Promoted
           @perform_checks          = args[:perform_checks] || false
           @uuid                    = args[:uuid]
           @now_millis              = args[:now_millis] || Time.now.to_i
-          @delivery_timeout_millis = args[:delivery_timeout_millis] || DELIVERY_TIMEOUT_MILLIS
+          @delivery_timeout_millis = args[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = args[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
           @should_apply_treatment  = args[:should_apply_treatment] || false
           @full_insertion          = args[:full_insertion]
