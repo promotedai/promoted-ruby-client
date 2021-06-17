@@ -14,7 +14,7 @@ SAMPLE_INPUT =  {
       "properties"=>[]
     },
     {
-      "content_id"=>"5b4a6512326bd9777abfabcf",
+      "content_id"=>"5b4a6512326bd9777abfabea",
       "properties"=>[]
     },
     {

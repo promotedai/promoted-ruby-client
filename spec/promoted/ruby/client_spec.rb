@@ -41,7 +41,7 @@ RSpec.describe Promoted::Ruby::Client do
     let!(:input_with_limit) do
       dup_input                      = Hash[input]
       request                        = dup_input["request"]
-      request[:paging]               = { size: 2, from: 0 }
+      request[:paging]               = { size: 2, offset: 0 }
       dup_input
     end
     let(:logging_json) { Promoted::Ruby::Client.prepare_for_logging(input_with_limit) }

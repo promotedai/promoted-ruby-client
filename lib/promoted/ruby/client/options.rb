@@ -172,7 +172,7 @@ module Promoted
           paging                = request[:paging] || {}
           size                  = paging[:size] ? paging[:size].to_i : 0
           offset                = paging[:offset].to_i
-          insertions_to_compact = full_insertion[from..size-1]
+          insertions_to_compact = full_insertion[offset..size-1]
 
           insertions_to_compact.each_with_index do |insertion_obj, index|
             # TODO - this does not look performant.
@@ -182,7 +182,7 @@ module Promoted
             insertion_obj[:timing]       = timing
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
-            insertion_obj[:position]     = from + index
+            insertion_obj[:position]     = offset + index
             insertion_obj                = @compact_func.call(insertion_obj) if @compact_func
             @insertion << insertion_obj
           end
