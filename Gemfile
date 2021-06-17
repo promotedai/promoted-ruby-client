@@ -7,3 +7,5 @@ gemspec
 
 gem 'faraday', '~> 1.4.1'
 gem 'byebug'
+gem 'ruby-debug-ide'
+gem 'debase', '>= 0.2.5.beta2'
