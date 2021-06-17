@@ -19,7 +19,7 @@ module Promoted
           @user_id                 = request[:user_id]
           @log_user_id             = request[:log_user_id]
           @view_id                 = request[:view_id]
-          @only_Log                = request[:only_Log] || false
+          @only_log                = request[:only_log] || false
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'FEED'
           @perform_checks          = args[:perform_checks] || false
           @uuid                    = args[:uuid]
@@ -171,7 +171,7 @@ module Promoted
           @insertion            = [] # insertion should be set according to the compact insertion
           paging                = request[:paging] || {}
           size                  = paging[:size] ? paging[:size].to_i : 0
-          offset                = paging[:offset].to_i
+          offset                = paging[:offset] ? paging[:offset].to_i : 0
           insertions_to_compact = full_insertion[offset..size-1]
 
           insertions_to_compact.each_with_index do |insertion_obj, index|
