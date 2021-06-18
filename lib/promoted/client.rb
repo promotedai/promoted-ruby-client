@@ -1,0 +1,1 @@
+require 'promoted/ruby/client'

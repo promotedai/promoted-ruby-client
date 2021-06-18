@@ -30,6 +30,12 @@ module Promoted
           'Insertion.contentId should be set'
         end
       end
+
+      class DeliverEndpointMissing < StandardError
+        def message
+          'delivery_endpoint should be set before sending data to API.'
+        end
+      end
     end
   end
 end

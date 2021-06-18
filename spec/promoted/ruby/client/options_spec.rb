@@ -7,8 +7,8 @@ RSpec.describe Promoted::Ruby::Client::Options do
     it "should set attributes" do
       options_obj = subject.class.new
       options_obj.set_request_params(input)
-      expect(options_obj.request).to eq(input["request"])
-      expect(options_obj.full_insertion).to eq(input["full_insertion"])
+      expect(options_obj.request).to eq(input[:request])
+      expect(options_obj.full_insertion).to eq(input[:full_insertion])
     end
   end
 
@@ -28,20 +28,19 @@ RSpec.describe Promoted::Ruby::Client::Options do
                   },
                   request:
                   [{
-                    "user_info"=> {"user_id"=>"912", "log_user_id"=>"91232"},
-                    "use_case"=>"FEED",
-                    "properties"=>
+                    user_info: {user_id:"912", log_user_id:"91232"},
+                    use_case:"FEED",
+                    properties:
                     {
-                      "struct"=>
+                      struct:
                       {
-                        "query"=>{}
+                        query:{}
                       }
                     }
                   }],
                   insertion:
                   [{
                     content_id: "5b4a6512326bd9777abfabc34",
-                    properties: [],
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: options.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][0][:insertion_id],
@@ -50,7 +49,6 @@ RSpec.describe Promoted::Ruby::Client::Options do
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabea",
-                    properties: [],
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: options.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][1][:insertion_id],
@@ -59,7 +57,6 @@ RSpec.describe Promoted::Ruby::Client::Options do
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
-                    properties: [],
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: options.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][2][:insertion_id],
@@ -68,7 +65,6 @@ RSpec.describe Promoted::Ruby::Client::Options do
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
-                    properties: [],
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: options.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][3][:insertion_id],
@@ -77,7 +73,6 @@ RSpec.describe Promoted::Ruby::Client::Options do
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
-                    properties: [],
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: options.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][4][:insertion_id],
@@ -85,6 +80,7 @@ RSpec.describe Promoted::Ruby::Client::Options do
                     position: 4
                   }]
                 }
+      byebug
       expect( prepare_for_logging_obj == output ).to be_truthy
     end
   end
