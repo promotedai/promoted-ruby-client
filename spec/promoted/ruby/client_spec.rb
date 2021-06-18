@@ -54,12 +54,10 @@ RSpec.describe Promoted::Ruby::Client do
   context "prepare_for_logging when user defined method is passed" do
     let!(:compact_func) do
       Proc.new do |insertion|
-        insertion[:properties].delete("invitesRequired")
-        insertion[:properties].delete("shouldDiscountAddons")
-        insertion[:properties].delete("tabletShowsPromotionDiscount")
-        insertion[:properties].delete("totalUses")
-        insertion[:properties].delete("isArchived")
-        insertion[:properties].delete("showActiveTimePeriodCountdown")
+        insertion[:properties].delete("invites_required")
+        insertion[:properties].delete("should_discount_addons")
+        insertion[:properties].delete("total_uses")
+        insertion[:properties].delete("is_archived")
         insertion
       end
     end
@@ -73,21 +71,19 @@ RSpec.describe Promoted::Ruby::Client do
 
     it "should take proc from input and delete the property values accordingly" do
       logging_json[:insertion].each do |insertion|
-        expect(insertion[:properties].key?("invitesRequired")).to be false
-        expect(insertion[:properties].key?("shouldDiscountAddons")).to be false
-        expect(insertion[:properties].key?("tabletShowsPromotionDiscount")).to be false
-        expect(insertion[:properties].key?("totalUses")).to be false
-        expect(insertion[:properties].key?("isArchived")).to be false
-        expect(insertion[:properties].key?("showActiveTimePeriodCountdown")).to be false
+        expect(insertion[:properties].key?("invites_required")).to be false
+        expect(insertion[:properties].key?("should_discount_addons")).to be false
+        expect(insertion[:properties].key?("total_uses")).to be false
+        expect(insertion[:properties].key?("is_archived")).to be false
       end
     end
 
     it "should take proc from input but should not delete the property values that are not included in proc" do
       logging_json[:insertion].each do |insertion|
-        expect(insertion[:properties].key?("isKioskEligible")).to be true
-        expect(insertion[:properties].key?("nonCombinable")).to be true
-        expect(insertion[:properties].key?("lastUsedAt")).to be true
-        expect(insertion[:properties].key?("lastPurchaseAt")).to be true
+        expect(insertion[:properties].key?("some_property_1")).to be true
+        expect(insertion[:properties].key?("some_property_2")).to be true
+        expect(insertion[:properties].key?("last_used_at")).to be true
+        expect(insertion[:properties].key?("last_purchase_at")).to be true
       end
     end
   end
