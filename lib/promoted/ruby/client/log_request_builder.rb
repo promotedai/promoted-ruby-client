@@ -1,42 +1,33 @@
 module Promoted
   module Ruby
     module Client
-      DEFAULT_DELIVERY_TIMEOUT_MILLIS = 30000
-      DEFAULT_METRICS_TIMEOUT_MILLIS = 250
-
-      class Options
-        attr_accessor :delivery_timeout_millis, :session_id, :perform_checks,
+      class LogRequestBuilder
+        attr_reader :delivery_timeout_millis, :session_id,
                       :uuid, :metrics_timeout_millis, :now_millis, :should_apply_treatment,
                       :view_id, :user_id, :insertion, :client_log_timestamp,
                       :request_id, :full_insertion, :use_case, :request, :compact_func
 
-        def initialize;end
+        def initialize params={}
+          @only_log                = params[:only_log] || false
+          @uuid                    = params[:uuid]
+          @now_millis              = params[:now_millis] || Time.now.to_i
+          @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
+          @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
+          @should_apply_treatment  = params[:should_apply_treatment] || false        
+        end
 
+        # Populates request parametes from the given arguments, presumed to be a hash of symbols.
         def set_request_params args = {}
-          args = translate_args(args)
           @request                 = args[:request] || {}
           @session_id              = request[:session_id]
           @user_id                 = request[:user_id]
           @log_user_id             = request[:log_user_id]
           @view_id                 = request[:view_id]
-          @only_log                = request[:only_log] || false
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'FEED'
-          @perform_checks          = args[:perform_checks] || false
-          @uuid                    = args[:uuid]
-          @now_millis              = args[:now_millis] || Time.now.to_i
-          @delivery_timeout_millis = args[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
-          @metrics_timeout_millis  = args[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
-          @should_apply_treatment  = args[:should_apply_treatment] || false
           @full_insertion          = args[:full_insertion]
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
           @request_id              = SecureRandom.uuid
           @compact_func            = args[:compact_func]
-        end
-
-        def translate_args(args)
-          args.transform_keys(&:to_s).transform_keys(&:to_underscore).transform_keys(&:to_sym)
-        rescue => e
-          raise 'Unable to parse args. Please pass correct arguments. Must be JSON'
         end
 
         def validate_request_params
@@ -87,11 +78,6 @@ module Promoted
         # A way to turn off logging.  Defaults to true.
         def enabled?
           @enabled
-        end
-
-        # Performs extra dev checks.  Safer but slower.  Defaults to true.
-        def perform_checks?
-          @perform_checks
         end
 
         # Default values to use on DeliveryRequests.
@@ -171,11 +157,15 @@ module Promoted
           @insertion            = [] # insertion should be set according to the compact insertion
           paging                = request[:paging] || {}
           size                  = paging[:size] ? paging[:size].to_i : 0
+          if size <= 0
+            size = full_insertion.length()
+          end
           offset                = paging[:offset] ? paging[:offset].to_i : 0
-          insertions_to_compact = full_insertion[offset..size-1]
 
-          insertions_to_compact.each_with_index do |insertion_obj, index|
+          full_insertion.each_with_index do |insertion_obj, index|
             # TODO - this does not look performant.
+            break if @insertion.length() >= size
+
             insertion_obj                = insertion_obj.transform_keys{ |key| key.to_s.to_underscore.to_sym }
             insertion_obj                = Hash[insertion_obj]
             insertion_obj[:user_info]    = user_info

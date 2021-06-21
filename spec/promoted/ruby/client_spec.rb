@@ -1,8 +1,7 @@
 require 'spec_helper'
 
-RSpec.describe Promoted::Ruby::Client do
+RSpec.describe Promoted::Ruby::Client::PromotedClient do
   let!(:input) { Hash[SAMPLE_INPUT] }
-  let!(:logging_json) { Promoted::Ruby::Client.prepare_for_logging(input) }
 
   it "has a version number" do
     expect(Promoted::Ruby::Client::VERSION).not_to be nil
@@ -10,27 +9,37 @@ RSpec.describe Promoted::Ruby::Client do
 
   context "prepare_for_logging when no limit is set" do
     it "has user_info set" do
+      client = subject.class.new
+      logging_json = client.prepare_for_logging(input)
       expect(logging_json[:user_info]).not_to be nil
       expect(logging_json[:user_info][:user_id]).to eq(input.dig('request', 'user_info', 'user_id'))
       expect(logging_json[:user_info][:log_user_id]).to eq(input.dig('request', 'user_info', 'log_user_id'))
     end
 
     it "should not have full_insertion" do
+      client = subject.class.new
+      logging_json = client.prepare_for_logging(input)
       expect(logging_json[:full_insertion]).to be nil
     end
 
     it "should have insertion set" do
+      client = subject.class.new
+      logging_json = client.prepare_for_logging(input)
       expect(logging_json[:insertion].length).to eq(input["full_insertion"].length)
       expect(logging_json[:insertion]).not_to be nil
     end
 
     it "should have request_id set" do
+      client = subject.class.new
+      logging_json = client.prepare_for_logging(input)
       logging_json[:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
       end
     end
 
     it "should have insertion_id set" do
+      client = subject.class.new
+      logging_json = client.prepare_for_logging(input)
       logging_json[:insertion].each do |insertion|
         expect(insertion[:insertion_id]).not_to be nil
       end
@@ -44,8 +53,9 @@ RSpec.describe Promoted::Ruby::Client do
       request[:paging]               = { size: 2, offset: 0 }
       dup_input
     end
-    let(:logging_json) { Promoted::Ruby::Client.prepare_for_logging(input_with_limit) }
     it "should have insertion set" do
+      client = subject.class.new
+      logging_json = client.prepare_for_logging(input)
       expect(logging_json[:insertion]).not_to be nil
       expect(logging_json[:insertion].length).to eq(input_with_limit["request"].dig(:paging, :size).to_i)
     end
@@ -66,10 +76,10 @@ RSpec.describe Promoted::Ruby::Client do
       input_with_proc[:compact_func] = compact_func
       input_with_proc
     end
-    let(:logging_json) { Promoted::Ruby::Client.prepare_for_logging(input_with_proc) }
-
 
     it "should take proc from input and delete the property values accordingly" do
+      client = subject.class.new
+      logging_json = client.prepare_for_logging(input_with_proc)
       logging_json[:insertion].each do |insertion|
         expect(insertion[:properties].key?("invites_required")).to be false
         expect(insertion[:properties].key?("should_discount_addons")).to be false
@@ -79,6 +89,8 @@ RSpec.describe Promoted::Ruby::Client do
     end
 
     it "should take proc from input but should not delete the property values that are not included in proc" do
+      client = subject.class.new
+      logging_json = client.prepare_for_logging(input_with_proc)
       logging_json[:insertion].each do |insertion|
         expect(insertion[:properties].key?("some_property_1")).to be true
         expect(insertion[:properties].key?("some_property_2")).to be true

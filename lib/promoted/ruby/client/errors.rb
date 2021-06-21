@@ -9,7 +9,7 @@ module Promoted
 
       class RequestInsertionError < StandardError
         def message
-          'Do not set Request.insertion.  Set fullInsertion.'
+          'Do not set Request.insertion.  Set full_insertion.'
         end
       end
 
