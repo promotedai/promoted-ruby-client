@@ -5,7 +5,7 @@ module Promoted
         attr_reader :delivery_timeout_millis, :session_id,
                       :metrics_timeout_millis, :should_apply_treatment,
                       :view_id, :user_id, :insertion, :client_log_timestamp,
-                      :request_id, :full_insertion, :use_case, :request, :compact_func
+                      :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion
 
         def initialize params={}
           @only_log                = params[:only_log] || false
@@ -25,7 +25,7 @@ module Promoted
           @full_insertion          = args[:full_insertion]
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
           @request_id              = SecureRandom.uuid
-          @compact_func            = args[:compact_func]
+          @to_compact_metrics_insertion            = args[:to_compact_metrics_insertion]
         end
 
         def validate_request_params
@@ -36,8 +36,8 @@ module Promoted
           @request
         end
 
-        def compact_func
-          @compact_func
+        def to_compact_metrics_insertion
+          @to_compact_metrics_insertion
         end
 
         def client_log_timestamp
@@ -160,7 +160,7 @@ module Promoted
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
-            insertion_obj                = @compact_func.call(insertion_obj) if @compact_func
+            insertion_obj                = @to_compact_metrics_insertion.call(insertion_obj) if @to_compact_metrics_insertion
             @insertion << insertion_obj
           end
           @insertion

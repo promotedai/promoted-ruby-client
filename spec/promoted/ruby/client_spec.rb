@@ -114,7 +114,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
   context "copy and remove properties compact func" do
     let!(:input_with_prop) do
       input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop[:compact_func] = subject.class.copy_and_remove_properties
+      input_with_prop[:to_compact_metrics_insertion] = subject.class.copy_and_remove_properties
       input_with_prop
     end
 
@@ -128,7 +128,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
   end
 
   context "prepare_for_logging when user defined method is passed" do
-    let!(:compact_func) do
+    let!(:to_compact_metrics_insertion) do
       Proc.new do |insertion|
         insertion[:properties].delete("invites_required")
         insertion[:properties].delete("should_discount_addons")
@@ -139,7 +139,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
     let!(:input_with_prop) do
       input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop[:compact_func] = compact_func
+      input_with_prop[:to_compact_metrics_insertion] = to_compact_metrics_insertion
       input_with_prop
     end
 
