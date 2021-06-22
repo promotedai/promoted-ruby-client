@@ -158,7 +158,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       client = subject.class.new
       logging_json = client.prepare_for_logging(input_with_prop)
       logging_json[:insertion].each do |insertion|
-        expect(insertion[:properties].key?("some_property_1")).to be true
+        # some_property_1 is nil so it gets stripped from the compacted insertions.
+        expect(insertion[:properties].key?("some_property_1")).to be false
+
         expect(insertion[:properties].key?("some_property_2")).to be true
         expect(insertion[:properties].key?("last_used_at")).to be true
         expect(insertion[:properties].key?("last_purchase_at")).to be true

@@ -161,7 +161,7 @@ module Promoted
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
             insertion_obj                = @to_compact_metrics_insertion.call(insertion_obj) if @to_compact_metrics_insertion
-            @insertion << insertion_obj
+            @insertion << insertion_obj.clean!
           end
           @insertion
         end
