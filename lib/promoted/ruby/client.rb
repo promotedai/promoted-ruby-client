@@ -13,17 +13,19 @@ module Promoted
   
         class Error < StandardError; end
 
-        attr_reader :perform_checks, :only_log, :uuid, :now_millis, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment
+        attr_reader :perform_checks, :only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment
         
         BASE_URL          = "http://wh12.lvh.me:3000"
         DELIVERY_ENDPOINT = "#{BASE_URL}/deliver"
         LOGGING_ENDPOINT  =  "#{BASE_URL}/log_request"
 
         def initialize (params={})
-          @perform_checks          = params[:perform_checks] || true
+          @perform_checks = true
+          if params[:perform_checks] != nil
+            @perform_checks = params[:perform_checks]
+          end
+
           @only_log                = params[:only_log] || false
-          @uuid                    = params[:uuid]
-          @now_millis              = params[:now_millis] || Time.now.to_i
           @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
           @should_apply_treatment  = params[:should_apply_treatment] || false
@@ -66,8 +68,6 @@ module Promoted
 
           log_request_builder = LogRequestBuilder.new({
             only_log: @only_log,
-            uuid: @uuid,
-            now_millis: @now_millis,
             delivery_timeout_millis: @delivery_timeout_millis,
             metrics_timeout_millis: @metrics_timeout_millis,
             should_apply_treatment: @should_apply_treatment
@@ -78,8 +78,14 @@ module Promoted
           log_request_builder.set_request_params(args)
           if perform_checks?
             Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(args)
-            pre_delivery_fillin_fields log_request_builder
+
+            if @shadow_traffic_delivery_percent > 0 && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
+              raise ShadowTrafficInsertionPageType
+            end
           end
+          
+          pre_delivery_fillin_fields log_request_builder
+
 
           if should_send_as_shadow_traffic?
             # TODO: Call deliver in the background to deliver shadow traffic
@@ -88,9 +94,19 @@ module Promoted
           log_request_builder.log_request_params
         end
 
+        # TODO: This probably just goes better in the LogRequestBuilder class.
         def pre_delivery_fillin_fields(log_request_builder)
           if log_request_builder.timing[:client_log_timestamp].nil?
             log_request_builder.client_log_timestamp = Time.now.to_i
+          end
+        end
+
+        # A common compact method implementation.
+        def self.copy_and_remove_properties
+          Proc.new do |insertion|
+            insertion = Hash[insertion]
+            insertion.delete(:properties)
+            insertion
           end
         end
       end

@@ -3,14 +3,12 @@ module Promoted
     module Client
       class LogRequestBuilder
         attr_reader :delivery_timeout_millis, :session_id,
-                      :uuid, :metrics_timeout_millis, :now_millis, :should_apply_treatment,
+                      :metrics_timeout_millis, :should_apply_treatment,
                       :view_id, :user_id, :insertion, :client_log_timestamp,
                       :request_id, :full_insertion, :use_case, :request, :compact_func
 
         def initialize params={}
           @only_log                = params[:only_log] || false
-          @uuid                    = params[:uuid]
-          @now_millis              = params[:now_millis] || Time.now.to_i
           @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
           @should_apply_treatment  = params[:should_apply_treatment] || false        
@@ -23,7 +21,7 @@ module Promoted
           @user_id                 = request[:user_id]
           @log_user_id             = request[:log_user_id]
           @view_id                 = request[:view_id]
-          @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'FEED'
+          @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'UNKNOWN_USE_CASE'
           @full_insertion          = args[:full_insertion]
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
           @request_id              = SecureRandom.uuid
@@ -85,12 +83,6 @@ module Promoted
           @default_request_values
         end
 
-        # Required as a dependency so clients can load reduce dependency on multiple
-        # uuid libraries.
-        def uuid
-          @uuid
-        end
-
         # Defaults to 250ms
         def delivery_timeout_millis
           @delivery_timeout_millis
@@ -99,11 +91,6 @@ module Promoted
         # Defaults to 3000ms
         def metrics_timeout_millis
           @metrics_timeout_millis
-        end
-
-        # For testing.  Allows for easy mocking of the clock.
-        def now_millis
-          @now_millis
         end
 
         def only_log
@@ -196,4 +183,4 @@ class String
    end
 end
 require 'securerandom'
-require "promoted/ruby/client/defaults"
+require "promoted/ruby/client/constants"
