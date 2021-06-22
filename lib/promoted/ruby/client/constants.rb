@@ -13,6 +13,9 @@ module Promoted
                    'MY_SAVED_CONTENT'=> 9,
                    'SELLER_CONTENT'=> 10,
                    'DISCOVER'=> 11}
+
+      INSERTION_PAGING_TYPE = {'UNPAGED' => 1,
+                               'PRE_PAGED' => 2}
     end
   end
 end

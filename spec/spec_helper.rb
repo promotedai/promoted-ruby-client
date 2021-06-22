@@ -1,6 +1,9 @@
+require 'simplecov'
+SimpleCov.start
+
 require "bundler/setup"
 require "promoted/ruby/client"
-require "shared/constants"
+require "shared/testdata"
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

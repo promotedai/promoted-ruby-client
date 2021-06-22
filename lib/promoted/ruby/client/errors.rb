@@ -30,6 +30,12 @@ module Promoted
           'Insertion.contentId should be set'
         end
       end
+
+      class ShadowTrafficInsertionPageType < StandardError
+        def message
+          'Insertions must be unpaged when shadow traffic is on'
+        end
+      end
     end
   end
 end

@@ -3,14 +3,12 @@ module Promoted
     module Client
       class LogRequestBuilder
         attr_reader :delivery_timeout_millis, :session_id,
-                      :uuid, :metrics_timeout_millis, :now_millis, :should_apply_treatment,
+                      :metrics_timeout_millis, :should_apply_treatment,
                       :view_id, :user_id, :insertion, :client_log_timestamp,
-                      :request_id, :full_insertion, :use_case, :request, :compact_func
+                      :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion
 
         def initialize params={}
           @only_log                = params[:only_log] || false
-          @uuid                    = params[:uuid]
-          @now_millis              = params[:now_millis] || Time.now.to_i
           @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
           @should_apply_treatment  = params[:should_apply_treatment] || false        
@@ -23,11 +21,11 @@ module Promoted
           @user_id                 = request[:user_id]
           @log_user_id             = request[:log_user_id]
           @view_id                 = request[:view_id]
-          @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'FEED'
+          @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'UNKNOWN_USE_CASE'
           @full_insertion          = args[:full_insertion]
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
           @request_id              = SecureRandom.uuid
-          @compact_func            = args[:compact_func]
+          @to_compact_metrics_insertion            = args[:to_compact_metrics_insertion]
         end
 
         def validate_request_params
@@ -38,8 +36,8 @@ module Promoted
           @request
         end
 
-        def compact_func
-          @compact_func
+        def to_compact_metrics_insertion
+          @to_compact_metrics_insertion
         end
 
         def client_log_timestamp
@@ -85,12 +83,6 @@ module Promoted
           @default_request_values
         end
 
-        # Required as a dependency so clients can load reduce dependency on multiple
-        # uuid libraries.
-        def uuid
-          @uuid
-        end
-
         # Defaults to 250ms
         def delivery_timeout_millis
           @delivery_timeout_millis
@@ -99,11 +91,6 @@ module Promoted
         # Defaults to 3000ms
         def metrics_timeout_millis
           @metrics_timeout_millis
-        end
-
-        # For testing.  Allows for easy mocking of the clock.
-        def now_millis
-          @now_millis
         end
 
         def only_log
@@ -173,8 +160,8 @@ module Promoted
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
-            insertion_obj                = @compact_func.call(insertion_obj) if @compact_func
-            @insertion << insertion_obj
+            insertion_obj                = @to_compact_metrics_insertion.call(insertion_obj) if @to_compact_metrics_insertion
+            @insertion << insertion_obj.clean!
           end
           @insertion
         end
@@ -184,16 +171,6 @@ module Promoted
   end
 end
 
-class String
-   # Ruby mutation methods have the expectation to return self if a mutation occurred, nil otherwise. (see http://www.ruby-doc.org/core-1.9.3/String.html#method-i-gsub-21)
-   def to_underscore!
-     gsub!(/(.)([A-Z])/,'\1_\2')
-     downcase!
-   end
-
-   def to_underscore
-     dup.tap { |s| s.to_underscore! }
-   end
-end
 require 'securerandom'
-require "promoted/ruby/client/defaults"
+require "promoted/ruby/client/constants"
+require "promoted/ruby/client/extensions"

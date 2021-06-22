@@ -41,7 +41,6 @@ RSpec.describe Promoted::Ruby::Client::LogRequestBuilder do
                   insertion:
                   [{
                     content_id: "5b4a6512326bd9777abfabc34",
-                    properties: {},
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: lrb.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][0][:insertion_id],
@@ -50,7 +49,6 @@ RSpec.describe Promoted::Ruby::Client::LogRequestBuilder do
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabea",
-                    properties: {},
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: lrb.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][1][:insertion_id],
@@ -59,7 +57,6 @@ RSpec.describe Promoted::Ruby::Client::LogRequestBuilder do
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
-                    properties: {},
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: lrb.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][2][:insertion_id],
@@ -68,7 +65,6 @@ RSpec.describe Promoted::Ruby::Client::LogRequestBuilder do
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
-                    properties: {},
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: lrb.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][3][:insertion_id],
@@ -77,7 +73,6 @@ RSpec.describe Promoted::Ruby::Client::LogRequestBuilder do
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
-                    properties: {},
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: lrb.client_log_timestamp},
                     insertion_id: prepare_for_logging_obj[:insertion][4][:insertion_id],

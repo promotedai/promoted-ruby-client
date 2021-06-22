@@ -7,7 +7,12 @@ gemspec
 
 gem 'faraday', '~> 1.4.1'
 gem 'byebug'
-gem 'ruby-debug-ide', group: :development
-gem 'debase', '>= 0.2.5.beta2', group: :development
-gem 'jaro_winkler', group: :development
-gem 'solargraph', group: :development
+
+group :development do
+    gem 'ruby-debug-ide', group: :development
+    gem 'debase', '>= 0.2.5.beta2', group: :development
+    gem 'jaro_winkler', group: :development
+    gem 'solargraph', group: :development
+end
+
+gem 'simplecov', require: false, group: :test
