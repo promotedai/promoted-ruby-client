@@ -1,7 +1,7 @@
 module Promoted
   module Ruby
     module Client
-      class LogRequestBuilder
+      class RequestBuilder
         attr_reader :delivery_timeout_millis, :session_id,
                       :metrics_timeout_millis, :should_apply_treatment,
                       :view_id, :user_id, :insertion, :client_log_timestamp,
@@ -26,6 +26,49 @@ module Promoted
           @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
           @request_id              = SecureRandom.uuid
           @to_compact_metrics_insertion            = args[:to_compact_metrics_insertion]
+        end
+
+        # Only used in delivery
+        def new_cohort_membership_to_log
+          return nil unless request[:experiment]
+          cohort_membership = Hash[request[:experiment]]
+          if !cohort_membership[:platform_Id] && request[:platform_Id]
+            cohort_membership[:platformId] = request[:platformId];
+          end
+          if !cohort_membership[:user_info] && request[:user_info]
+            cohort_membership[:user_info] = request[:user_info]
+          end
+          if !cohort_membership[:timing] && request[:timing]
+            cohort_membership[:timing] = request[:timing]
+          end
+          return cohort_membership
+        end
+
+        # Only used in delivery
+        def delivery_request_params
+          {
+            request: Hash[request].merge!(insertion: compact_insertions)
+          }
+        end
+
+        # Only used in delivery
+        # Maps the response insertions to the full insertions and re-insert the properties bag
+        # to the responses.
+        def fill_details_from_response response_insertions
+          props = @full_insertion.each_with_object({}) do |insertion, hash|
+            hash[insertion[:content_id]] = insertion[:properties]
+          end
+
+          filled_in_copy = []
+          response_insertions.each do |resp_insertion|
+            copied_insertion = resp_insertion.clone
+            if copied_insertion.has_key?(:content_id) && props.has_key?(copied_insertion[:content_id])
+              copied_insertion[:properties] = props[resp_insertion[:content_id]]
+            end
+            filled_in_copy << copied_insertion
+          end
+
+          filled_in_copy
         end
 
         def validate_request_params
