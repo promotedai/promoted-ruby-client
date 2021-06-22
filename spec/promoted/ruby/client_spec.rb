@@ -1,5 +1,7 @@
 require 'spec_helper'
 
+ENDPOINTS = { :delivery_endpoint => "http://delivery.example.com", :metrics_endpoint => "http://metrics.example.com" } 
+
 RSpec.describe Promoted::Ruby::Client::PromotedClient do
   let!(:input) { Hash[SAMPLE_INPUT] }
 
@@ -7,9 +9,29 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     expect(Promoted::Ruby::Client::VERSION).not_to be nil
   end
 
+  context "initialization" do
+    it "requires delivery endpoint" do
+      expect { described_class.new( { :metrics_endpoint => "foo" } ) }.to raise_error(ArgumentError, /delivery_endpoint/)
+    end
+
+    it "requires metrics endpoint" do
+      expect { described_class.new( { :delivery_endpoint => "foo" } ) }.to raise_error(ArgumentError, /metrics_endpoint/)
+    end
+
+    it "disallows too small shadow traffic percent" do
+      expect { described_class.new(ENDPOINTS.merge( { :shadow_traffic_delivery_percent => -1 } )) }.
+        to raise_error(ArgumentError, /shadow_traffic_delivery_percent/)
+    end
+
+    it "disallows too large shadow traffic percent" do
+      expect { described_class.new(ENDPOINTS.merge( { :shadow_traffic_delivery_percent => 1.1 } )) }.
+        to raise_error(ArgumentError, /shadow_traffic_delivery_percent/)
+    end
+  end
+
   context "prepare_for_logging when no limit is set" do
     it "has user_info set" do
-      client = subject.class.new
+      client = described_class.new(ENDPOINTS)
       logging_json = client.prepare_for_logging(input)
       expect(logging_json[:user_info]).not_to be nil
       expect(logging_json[:user_info][:user_id]).to eq(input.dig('request', 'user_info', 'user_id'))
@@ -17,20 +39,20 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
 
     it "should not have full_insertion" do
-      client = subject.class.new
+      client = described_class.new(ENDPOINTS)
       logging_json = client.prepare_for_logging(input)
       expect(logging_json[:full_insertion]).to be nil
     end
 
     it "should have insertion set" do
-      client = subject.class.new
+      client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
       expect(logging_json[:insertion].length).to eq(input["full_insertion"].length)
       expect(logging_json[:insertion]).not_to be nil
     end
 
     it "should have request_id set" do
-      client = subject.class.new
+      client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
       logging_json[:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
@@ -38,7 +60,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
 
     it "should have insertion_id set" do
-      client = subject.class.new
+      client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
       logging_json[:insertion].each do |insertion|
         expect(insertion[:insertion_id]).not_to be nil
@@ -54,7 +76,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       dup_input
     end
     it "should have insertion set" do
-      client = subject.class.new
+      client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
       expect(logging_json[:insertion]).not_to be nil
       expect(logging_json[:insertion].length).to eq(input_with_limit["request"].dig(:paging, :size).to_i)
@@ -74,7 +96,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         insertion["view_id"] = "uuid" + idx.to_s
       end
 
-      client = subject.class.new
+      client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(dup_input)
       expect(logging_json[:insertion][0].key?(:session_id)).to be true
       expect(logging_json[:insertion][0][:session_id]).to eq "uuid0"
@@ -88,17 +110,17 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       dup_input                       = Hash[input]
       dup_input["insertion_page_type"] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
 
-      client = subject.class.new({ :shadow_traffic_delivery_percent => 0.5 })
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
       expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ShadowTrafficInsertionPageType)
     end
 
     it "throws if shadow traffic is on and request paging type is undefined" do
-      client = subject.class.new({ :shadow_traffic_delivery_percent => 0.5 })
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
       expect { client.prepare_for_logging(input) }.to raise_error(Promoted::Ruby::Client::ShadowTrafficInsertionPageType)
     end
 
     it "paging type is not checked when perform checks is off" do
-      client = subject.class.new({ :shadow_traffic_delivery_percent => 0.5, :perform_checks => false })
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5, :perform_checks => false }))
       expect { client.prepare_for_logging(input) }.not_to raise_error
     end
 
@@ -106,7 +128,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       dup_input                       = Hash[input]
       dup_input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
 
-      client = subject.class.new({ :shadow_traffic_delivery_percent => 0.5 })
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
       expect { client.prepare_for_logging(dup_input) }.not_to raise_error
     end
   end
@@ -114,12 +136,12 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
   context "copy and remove properties compact func" do
     let!(:input_with_prop) do
       input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop[:to_compact_metrics_insertion] = subject.class.copy_and_remove_properties
+      input_with_prop[:to_compact_metrics_insertion] = described_class.copy_and_remove_properties
       input_with_prop
     end
 
     it "should take proc from input and delete the property values accordingly" do
-      client = subject.class.new
+      client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input_with_prop)
       logging_json[:insertion].each do |insertion|
         expect(insertion.key?(:properties)).to be false
@@ -144,7 +166,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
 
     it "should take proc from input and delete the property values accordingly" do
-      client = subject.class.new
+      client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input_with_prop)
       logging_json[:insertion].each do |insertion|
         expect(insertion[:properties].key?("invites_required")).to be false
@@ -155,7 +177,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
 
     it "should take proc from input but should not delete the property values that are not included in proc" do
-      client = subject.class.new
+      client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input_with_prop)
       logging_json[:insertion].each do |insertion|
         # some_property_1 is nil so it gets stripped from the compacted insertions.

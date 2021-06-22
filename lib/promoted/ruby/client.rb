@@ -13,12 +13,9 @@ module Promoted
   
         class Error < StandardError; end
 
-        attr_reader :perform_checks, :only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment
+        attr_reader :perform_checks, :only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment,
+                    :metrics_endpoint, :delivery_endpoint
         
-        BASE_URL          = "http://wh12.lvh.me:3000"
-        DELIVERY_ENDPOINT = "#{BASE_URL}/deliver"
-        LOGGING_ENDPOINT  =  "#{BASE_URL}/log_request"
-
         def initialize (params={})
           @perform_checks = true
           if params[:perform_checks] != nil
@@ -31,7 +28,13 @@ module Promoted
           @should_apply_treatment  = params[:should_apply_treatment] || false
           
           @shadow_traffic_delivery_percent = params[:shadow_traffic_delivery_percent] || 0.0
-          throw :invalid_shadow_traffic_delivery_percent if @shadow_traffic_delivery_percent < 0 || @shadow_traffic_delivery_percent > 1.0
+          raise ArgumentError.new("Invalid shadow_traffic_delivery_percent, must be between 0 and 1") if @shadow_traffic_delivery_percent < 0 || @shadow_traffic_delivery_percent > 1.0
+
+          @delivery_endpoint = params[:delivery_endpoint].to_s
+          raise ArgumentError.new("delivery_endpoint is required") if @delivery_endpoint.empty?
+
+          @metrics_endpoint = params[:metrics_endpoint].to_s
+          raise ArgumentError.new("metrics_endpoint is required") if @metrics_endpoint.empty?
 
           @sampler = Sampler.new
         end
