@@ -17,7 +17,8 @@ end
 
 # Done async
 def log_request items
-  log_request = Promoted::Ruby::Client.prepare_for_logging(input)
+  client = Promoted::Ruby::Client::PromotedClient.new
+  log_request = client.prepare_for_logging(input)
   # Send JSON to Metrics API.
   log_to_promoted_event_api(log_request)
 end
@@ -25,7 +26,7 @@ end
 
 ## Naming details
 
-`fullInsertion` - for `prepare_for_logging`, this is the current page of `Insertion`s with full `Insertion.properties` filled with the item details.  For v1 integrations, it is fine to not fill in the full properties.
+`full_insertion` - for `prepare_for_logging`, this is the current page of `Insertion`s with full `Insertion.properties` filled with the item details.  For v1 integrations, it is fine to not fill in the full properties.
 
 ## Pagination
 
@@ -97,10 +98,11 @@ request_input = {
       }
     }
   },
-  fullInsertion: to_insertions(products)
+  full_insertion: to_insertions(products)
 }
 
-log_request = Promoted::Ruby::Client.prepare_for_logging(request_input)
+client = Promoted::Ruby::Client::PromotedClient.new
+log_request = client.prepare_for_logging(request_input)
 log_request.to_json
 ```
 
@@ -128,10 +130,11 @@ request_input = {
       }
     }
   },
-  fullInsertion: to_insertions(products)
+  full_insertion: to_insertions(products)
 }
 
-log_request = Promoted::Ruby::Client.prepare_for_logging(request_input)
+client = Promoted::Ruby::Client::PromotedClient.new
+log_request = client.prepare_for_logging(request_input)
 log_request.to_json
 ```
 
@@ -175,7 +178,7 @@ input = {
       }
     }
   },
-  "fullInsertion"=>to_insertions(products)
+  "full_insertion"=>to_insertions(products)
 }
 ```
 
@@ -191,7 +194,7 @@ input = {
       }
     }
   },
-  "fullInsertion"=>[
+  "full_insertion"=>[
     {
       "contentId"=>"123",
       "properties"=>{

@@ -11,23 +11,23 @@ SAMPLE_INPUT =  {
   "full_insertion"=>[
     {
       "content_id"=>"5b4a6512326bd9777abfabc34",
-      "properties"=>[]
+      "properties"=>{}
     },
     {
       "content_id"=>"5b4a6512326bd9777abfabea",
-      "properties"=>[]
+      "properties"=>{}
     },
     {
       "content_id"=>"5b4a6512326bd9777abfabcf",
-      "properties"=>[]
+      "properties"=>{}
     },
     {
       "content_id"=>"5b4a6512326bd9777abfabcf",
-      "properties"=>[]
+      "properties"=>{}
     },
     {
       "content_id"=>"5b4a6512326bd9777abfabcf",
-      "properties"=>[]
+      "properties"=>{}
     }
   ]
 }.freeze
