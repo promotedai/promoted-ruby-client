@@ -6,8 +6,8 @@ require "promoted/ruby/client/version"
 Gem::Specification.new do |spec|
   spec.name          = "promoted-ruby-client"
   spec.version       = Promoted::Ruby::Client::VERSION
-  spec.authors       = ["dev-ham"]
-  spec.email         = ["devhammad.masood@gmail.com"]
+  spec.authors       = ["scottmcmaster"]
+  spec.email         = ["scott@promoted.ai"]
 
   spec.summary       = 'A Ruby Client to contact Promoted APIs.'
   spec.description   = 'This is primarily intended to be used when logging Requests and Insertions on a backend server.'

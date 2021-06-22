@@ -21,7 +21,7 @@ module Promoted
 
         def initialize (params={})
           @perform_checks          = params[:perform_checks] || true
-          @only_Log                = params[:only_Log] || false
+          @only_log                = params[:only_log] || false
           @uuid                    = params[:uuid]
           @now_millis              = params[:now_millis] || Time.now.to_i
           @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS

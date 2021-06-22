@@ -16,7 +16,7 @@ module Promoted
           @should_apply_treatment  = params[:should_apply_treatment] || false        
         end
 
-        # Populates request parametes from the given arguments, presumed to be a hash of symbols.
+        # Populates request parameters from the given arguments, presumed to be a hash of symbols.
         def set_request_params args = {}
           @request                 = args[:request] || {}
           @session_id              = request[:session_id]
@@ -106,8 +106,8 @@ module Promoted
           @now_millis
         end
 
-        def only_Log
-          @only_Log
+        def only_log
+          @only_log
         end
 
         def full_insertion
