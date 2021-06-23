@@ -20,24 +20,8 @@ module Promoted
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'UNKNOWN_USE_CASE'
           @full_insertion          = args[:full_insertion]
           @request_id              = SecureRandom.uuid
-          
-          if request[:user_info] == nil
-            @user_info ={
-              user_id: nil,
-              log_user_id: nil
-            }
-          else
-            @user_info = request[:user_info]
-          end
-
-          if request[:timing] != nil
-            @timing = request[:timing]
-          else
-            client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
-            @timing = {
-              :client_log_timestamp => client_log_timestamp
-            }
-          end
+          @user_info               = request[:user_info] || { :user_id => nil, :log_user_id => nil}
+          @timing                  = request[:timing] || { :client_log_timestamp => Time.now.to_i }
 
           @to_compact_metrics_insertion_func       = args[:to_compact_metrics_insertion_func]
           @to_compact_delivery_insertion_func      = args[:to_compact_delivery_insertion_func]
@@ -102,10 +86,6 @@ module Promoted
           @to_compact_delivery_insertion_func
         end
 
-        def client_log_timestamp
-          @client_log_timestamp
-        end
-
         def view_id
           @view_id
         end
@@ -149,10 +129,6 @@ module Promoted
 
         def timing
           @timing
-        end
-
-        def client_log_timestamp
-          @timing[:client_log_timestamp]
         end
 
         def request_id

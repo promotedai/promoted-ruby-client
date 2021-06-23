@@ -44,7 +44,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                   },
                   timing:
                   {
-                    client_log_timestamp: request_builder.client_log_timestamp
+                    client_log_timestamp: request_builder.timing[:client_log_timestamp]
                   },
                   request:
                   [{
@@ -62,7 +62,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                   [{
                     content_id: "5b4a6512326bd9777abfabc34",
                     user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.client_log_timestamp},
+                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
                     insertion_id: prepare_for_logging_obj[:insertion][0][:insertion_id],
                     request_id: request_builder.request_id,
                     position: 0
@@ -70,7 +70,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                   {
                     content_id: "5b4a6512326bd9777abfabea",
                     user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.client_log_timestamp},
+                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
                     insertion_id: prepare_for_logging_obj[:insertion][1][:insertion_id],
                     request_id: request_builder.request_id,
                     position: 1
@@ -78,7 +78,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
                     user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.client_log_timestamp},
+                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
                     insertion_id: prepare_for_logging_obj[:insertion][2][:insertion_id],
                     request_id: request_builder.request_id,
                     position: 2
@@ -86,7 +86,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
                     user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.client_log_timestamp},
+                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
                     insertion_id: prepare_for_logging_obj[:insertion][3][:insertion_id],
                     request_id: request_builder.request_id,
                     position: 3
@@ -94,7 +94,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
                     user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.client_log_timestamp},
+                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
                     insertion_id: prepare_for_logging_obj[:insertion][4][:insertion_id],
                     request_id: request_builder.request_id,
                     position: 4
