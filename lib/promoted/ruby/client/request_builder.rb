@@ -2,13 +2,12 @@ module Promoted
   module Ruby
     module Client
       class RequestBuilder
-        attr_reader   :session_id, :should_apply_treatment_func,
-                      :view_id, :user_id, :insertion, :to_compact_delivery_insertion_func,
+        attr_reader   :session_id, :user_info,
+                      :view_id, :insertion, :to_compact_delivery_insertion_func,
                       :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion_func
 
         def initialize params={}
           @only_log                = params[:only_log] || false
-          @should_apply_treatment_func  = params[:should_apply_treatment]
         end
 
         # Populates request parameters from the given arguments, presumed to be a hash of symbols.
@@ -22,17 +21,13 @@ module Promoted
           @full_insertion          = args[:full_insertion]
           @request_id              = SecureRandom.uuid
           
-          if request[:user_info] != nil
-            @user_info = request[:user_info]
-            @user_id = @user_info[:user_id]
-            @log_user_id = @user_info[:log_user_id]
-          else
-            @user_id     = request[:user_id]
-            @log_user_id = request[:log_user_id]
+          if request[:user_info] == nil
             @user_info ={
-              user_id: @user_id,
-              log_user_id: @log_user_id
+              user_id: nil,
+              log_user_id: nil
             }
+          else
+            @user_info = request[:user_info]
           end
 
           if request[:timing] != nil
@@ -48,15 +43,6 @@ module Promoted
           @to_compact_delivery_insertion_func      = args[:to_compact_delivery_insertion_func]
         end
 
-        def should_apply_treatment
-          if @should_apply_treatment_func != nil
-            @should_apply_treatment_func
-          else
-            return true if @cohort_membership == nil || @cohort_membership[:arm] == nil
-            return @cohort_membership[:arm] != 'CONTROL'
-          end
-        end
-        
         # Only used in delivery
         def new_cohort_membership_to_log
           return nil unless request[:experiment]
@@ -127,13 +113,6 @@ module Promoted
         def platform_id
           @platform_id
         end
-        
-        def user_id
-          return @user_id if @user_id
-          @user_id = request.dig(:user_info, :user_id)
-          @user_id ||= request.dig('user_info', 'user_id')
-          @user_id
-        end
 
         def session_id
           @session_id
@@ -144,13 +123,6 @@ module Promoted
         # the list.
         def insertion
           @insertion
-        end
-
-        def log_user_id
-          return @log_user_id if @log_user_id
-          @log_user_id   = request.dig(:user_info, :log_user_id)
-          @log_user_id ||= request.dig('user_info', 'log_user_id')
-          @log_user_id
         end
 
         # A way to turn off logging.  Defaults to true.
