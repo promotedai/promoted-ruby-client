@@ -56,8 +56,6 @@ module Promoted
 
           delivery_request_builder = RequestBuilder.new({
             only_log: @only_log,
-            delivery_timeout_millis: @delivery_timeout_millis,
-            metrics_timeout_millis: @metrics_timeout_millis,
             should_apply_treatment: @should_apply_treatment
           })
           delivery_request_builder.set_request_params(args)
@@ -69,8 +67,9 @@ module Promoted
           pre_delivery_fillin_fields log_request_builder
   
           response_insertions = []
+          cohort_membership_to_log = nil
           insertions_from_promoted = false
-          if !options.onlyLog
+          if !delivery_request_builder.only_log
             cohort_membership_to_log = delivery_request_builder.new_cohort_membership_to_log
           end
   
@@ -81,14 +80,42 @@ module Promoted
             response_insertions = delivery_request_builder.fill_details_from_response(response.insertion)
           end
   
+          request_to_log = nil
           if !insertions_from_promoted
+            request_to_log = delivery_request_builder.request
             size = delivery_request_builder.request.dig(:paging, :size)
             response_insertions = size.present? ? delivery_request_builder.full_insertion[0..size] : delivery_request_builder.full_insertion
           end
 
-          # TODO still have to implement log_request from response.
-          # returning response insertions for now.
-          return { :insertion => response_insertions }
+          if request_to_log
+            request_to_log[:request_id] = SecureRandom.uuid if not request_to_log[:request_id]
+            add_missing_ids_on_insertions! request_to_log, response_insertions
+          end
+
+          log_request_builder = RequestBuilder.new({
+            only_log: @only_log,
+            should_apply_treatment: @should_apply_treatment
+          })
+          log_request = {
+            :full_insertion => response_insertions,
+            :cohort_membership => cohort_membership_to_log,
+            :request => request_to_log,
+            :platform_Id => delivery_request_builder.platform_id,
+            :timing => delivery_request_builder.timing,
+            :user_info => delivery_request_builder.user_info
+          }
+          log_request_builder.set_request_params(log_request)
+          pre_delivery_fillin_fields log_request_builder
+
+          log_request_builder.log_request_params
+        end
+
+        def add_missing_ids_on_insertions! request, insertions
+          insertions.each do |insertion|
+            insertion[:insertion_id] = SecureRandom.uuid if not insertion[:insertion_id]
+            insertion[:session_id] = request[:session_id] if request[:session_id]
+            insertion[:request_id] = request[:request_id] if request[:request_id]
+          end
         end
 
         def perform_checks?
@@ -109,8 +136,6 @@ module Promoted
 
           log_request_builder = RequestBuilder.new({
             only_log: @only_log,
-            delivery_timeout_millis: @delivery_timeout_millis,
-            metrics_timeout_millis: @metrics_timeout_millis,
             should_apply_treatment: @should_apply_treatment
           })
 
@@ -127,7 +152,6 @@ module Promoted
           
           pre_delivery_fillin_fields log_request_builder
 
-
           if should_send_as_shadow_traffic?
             # TODO: Call deliver in the background to deliver shadow traffic
           end
@@ -138,7 +162,7 @@ module Promoted
         # TODO: This probably just goes better in the RequestBuilder class.
         def pre_delivery_fillin_fields(log_request_builder)
           if log_request_builder.timing[:client_log_timestamp].nil?
-            log_request_builder.client_log_timestamp = Time.now.to_i
+            log_request_builder.timing[:client_log_timestamp] = Time.now.to_i
           end
         end
 

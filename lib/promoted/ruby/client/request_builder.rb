@@ -2,15 +2,12 @@ module Promoted
   module Ruby
     module Client
       class RequestBuilder
-        attr_reader :delivery_timeout_millis, :session_id,
-                      :metrics_timeout_millis, :should_apply_treatment,
-                      :view_id, :user_id, :insertion, :client_log_timestamp,
+        attr_reader   :session_id, :should_apply_treatment,
+                      :view_id, :user_id, :insertion,
                       :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion
 
         def initialize params={}
           @only_log                = params[:only_log] || false
-          @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
-          @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
           @should_apply_treatment  = params[:should_apply_treatment] || false        
         end
 
@@ -20,11 +17,23 @@ module Promoted
           @session_id              = request[:session_id]
           @user_id                 = request[:user_id]
           @log_user_id             = request[:log_user_id]
+          @platform_id             = request[:platform_id]
+          @cohort_membership       = request[:cohort_membership]
+          @user_info               = request[:user_info]
           @view_id                 = request[:view_id]
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'UNKNOWN_USE_CASE'
           @full_insertion          = args[:full_insertion]
-          @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
           @request_id              = SecureRandom.uuid
+
+          if request[:timing]
+            @timing = request[:timing]
+          else
+            client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
+            @timing = {
+              :client_log_timestamp => client_log_timestamp
+            }
+          end
+
           @to_compact_metrics_insertion            = args[:to_compact_metrics_insertion]
         end
 
@@ -32,8 +41,8 @@ module Promoted
         def new_cohort_membership_to_log
           return nil unless request[:experiment]
           cohort_membership = Hash[request[:experiment]]
-          if !cohort_membership[:platform_Id] && request[:platform_Id]
-            cohort_membership[:platformId] = request[:platformId];
+          if !cohort_membership[:platform_id] && request[:platform_id]
+            cohort_membership[:platform_id] = request[:platform_id];
           end
           if !cohort_membership[:user_info] && request[:user_info]
             cohort_membership[:user_info] = request[:user_info]
@@ -126,16 +135,6 @@ module Promoted
           @default_request_values
         end
 
-        # Defaults to 250ms
-        def delivery_timeout_millis
-          @delivery_timeout_millis
-        end
-
-        # Defaults to 3000ms
-        def metrics_timeout_millis
-          @metrics_timeout_millis
-        end
-
         def only_log
           @only_log
         end
@@ -152,9 +151,11 @@ module Promoted
         end
 
         def timing
-          @timing = {
-            client_log_timestamp: client_log_timestamp
-          }
+          @timing
+        end
+
+        def client_log_timestamp
+          @timing[:client_log_timestamp]
         end
 
         def request_id
