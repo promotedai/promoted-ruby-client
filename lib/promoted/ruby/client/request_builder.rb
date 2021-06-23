@@ -1,31 +1,73 @@
 module Promoted
   module Ruby
     module Client
-      class LogRequestBuilder
-        attr_reader :delivery_timeout_millis, :session_id,
-                      :metrics_timeout_millis, :should_apply_treatment,
-                      :view_id, :user_id, :insertion, :client_log_timestamp,
-                      :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion
+      class RequestBuilder
+        attr_reader   :session_id, :user_info,
+                      :view_id, :insertion, :to_compact_delivery_insertion_func,
+                      :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion_func
 
         def initialize params={}
           @only_log                = params[:only_log] || false
-          @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
-          @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
-          @should_apply_treatment  = params[:should_apply_treatment] || false        
         end
 
         # Populates request parameters from the given arguments, presumed to be a hash of symbols.
         def set_request_params args = {}
           @request                 = args[:request] || {}
           @session_id              = request[:session_id]
-          @user_id                 = request[:user_id]
-          @log_user_id             = request[:log_user_id]
+          @platform_id             = request[:platform_id]
+          @cohort_membership       = request[:cohort_membership]
           @view_id                 = request[:view_id]
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'UNKNOWN_USE_CASE'
           @full_insertion          = args[:full_insertion]
-          @client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
           @request_id              = SecureRandom.uuid
-          @to_compact_metrics_insertion            = args[:to_compact_metrics_insertion]
+          @user_info               = request[:user_info] || { :user_id => nil, :log_user_id => nil}
+          @timing                  = request[:timing] || { :client_log_timestamp => Time.now.to_i }
+
+          @to_compact_metrics_insertion_func       = args[:to_compact_metrics_insertion_func]
+          @to_compact_delivery_insertion_func      = args[:to_compact_delivery_insertion_func]
+        end
+
+        # Only used in delivery
+        def new_cohort_membership_to_log
+          return nil unless request[:experiment]
+          cohort_membership = Hash[request[:experiment]]
+          if !cohort_membership[:platform_id] && request[:platform_id]
+            cohort_membership[:platform_id] = request[:platform_id];
+          end
+          if !cohort_membership[:user_info] && request[:user_info]
+            cohort_membership[:user_info] = request[:user_info]
+          end
+          if !cohort_membership[:timing] && request[:timing]
+            cohort_membership[:timing] = request[:timing]
+          end
+          return cohort_membership
+        end
+
+        # Only used in delivery
+        def delivery_request_params
+          {
+            request: Hash[request].merge!(insertion: compact_insertions)
+          }
+        end
+
+        # Only used in delivery
+        # Maps the response insertions to the full insertions and re-insert the properties bag
+        # to the responses.
+        def fill_details_from_response response_insertions
+          props = @full_insertion.each_with_object({}) do |insertion, hash|
+            hash[insertion[:content_id]] = insertion[:properties]
+          end
+
+          filled_in_copy = []
+          response_insertions.each do |resp_insertion|
+            copied_insertion = resp_insertion.clone
+            if copied_insertion.has_key?(:content_id) && props.has_key?(copied_insertion[:content_id])
+              copied_insertion[:properties] = props[resp_insertion[:content_id]]
+            end
+            filled_in_copy << copied_insertion
+          end
+
+          filled_in_copy
         end
 
         def validate_request_params
@@ -36,23 +78,20 @@ module Promoted
           @request
         end
 
-        def to_compact_metrics_insertion
-          @to_compact_metrics_insertion
+        def to_compact_metrics_insertion_func
+          @to_compact_metrics_insertion_func
         end
 
-        def client_log_timestamp
-          @client_log_timestamp
+        def to_compact_delivery_insertion_func
+          @to_compact_delivery_insertion_func
         end
 
         def view_id
           @view_id
         end
 
-        def user_id
-          return @user_id if @user_id
-          @user_id = request.dig(:user_info, :user_id)
-          @user_id ||= request.dig('user_info', 'user_id')
-          @user_id
+        def platform_id
+          @platform_id
         end
 
         def session_id
@@ -66,13 +105,6 @@ module Promoted
           @insertion
         end
 
-        def log_user_id
-          return @log_user_id if @log_user_id
-          @log_user_id   = request.dig(:user_info, :log_user_id)
-          @log_user_id ||= request.dig('user_info', 'log_user_id')
-          @log_user_id
-        end
-
         # A way to turn off logging.  Defaults to true.
         def enabled?
           @enabled
@@ -81,16 +113,6 @@ module Promoted
         # Default values to use on DeliveryRequests.
         def default_request_values
           @default_request_values
-        end
-
-        # Defaults to 250ms
-        def delivery_timeout_millis
-          @delivery_timeout_millis
-        end
-
-        # Defaults to 3000ms
-        def metrics_timeout_millis
-          @metrics_timeout_millis
         end
 
         def only_log
@@ -102,16 +124,11 @@ module Promoted
         end
 
         def user_info
-          {
-            user_id: user_id,
-            log_user_id: log_user_id
-          }
+          @user_info
         end
 
         def timing
-          @timing = {
-            client_log_timestamp: client_log_timestamp
-          }
+          @timing
         end
 
         def request_id
@@ -160,7 +177,8 @@ module Promoted
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
-            insertion_obj                = @to_compact_metrics_insertion.call(insertion_obj) if @to_compact_metrics_insertion
+            # TODO: Toogle with the delivery func
+            insertion_obj                = @to_compact_metrics_insertion_func.call(insertion_obj) if @to_compact_metrics_insertion_func
             @insertion << insertion_obj.clean!
           end
           @insertion
