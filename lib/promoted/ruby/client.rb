@@ -66,7 +66,7 @@ module Promoted
             Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(args)
           end
 
-          pre_delivery_fillin_fields log_request_builder
+          pre_delivery_fillin_fields delivery_request_builder
   
           response_insertions = []
           cohort_membership_to_log = nil
@@ -86,7 +86,7 @@ module Promoted
           if !insertions_from_promoted
             request_to_log = delivery_request_builder.request
             size = delivery_request_builder.request.dig(:paging, :size)
-            response_insertions = size.present? ? delivery_request_builder.full_insertion[0..size] : delivery_request_builder.full_insertion
+            response_insertions = size != nil ? delivery_request_builder.full_insertion[0..size] : delivery_request_builder.full_insertion
           end
 
           if request_to_log

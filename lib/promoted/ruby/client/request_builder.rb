@@ -15,15 +15,25 @@ module Promoted
         def set_request_params args = {}
           @request                 = args[:request] || {}
           @session_id              = request[:session_id]
-          @user_id                 = request[:user_id]
-          @log_user_id             = request[:log_user_id]
           @platform_id             = request[:platform_id]
           @cohort_membership       = request[:cohort_membership]
-          @user_info               = request[:user_info]
           @view_id                 = request[:view_id]
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'UNKNOWN_USE_CASE'
           @full_insertion          = args[:full_insertion]
           @request_id              = SecureRandom.uuid
+          
+          if request[:user_info]
+            @user_info = request[:user_info]
+            @user_id = @user_info[:user_id]
+            @log_user_id = @user_info[:log_user_id]
+          else
+            @user_id     = request[:user_id]
+            @log_user_id = request[:log_user_id]
+            @user_info ={
+              user_id: @user_id,
+              log_user_id: @log_user_id
+            }
+          end
 
           if request[:timing]
             @timing = request[:timing]
@@ -100,6 +110,10 @@ module Promoted
           @view_id
         end
 
+        def platform_id
+          @platform_id
+        end
+        
         def user_id
           return @user_id if @user_id
           @user_id = request.dig(:user_info, :user_id)
@@ -144,10 +158,7 @@ module Promoted
         end
 
         def user_info
-          {
-            user_id: user_id,
-            log_user_id: log_user_id
-          }
+          @user_info
         end
 
         def timing
