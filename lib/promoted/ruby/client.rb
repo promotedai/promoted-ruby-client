@@ -8,6 +8,8 @@ module Promoted
 
       DEFAULT_DELIVERY_TIMEOUT_MILLIS = 3000
       DEFAULT_METRICS_TIMEOUT_MILLIS = 250
+      DEFAULT_DELIVERY_ENDPOINT = "http://delivery.example.com"
+      DEFAULT_METRICS_ENDPOINT = "http://metrics.example.com"
 
       class PromotedClient
   
@@ -30,11 +32,11 @@ module Promoted
           @shadow_traffic_delivery_percent = params[:shadow_traffic_delivery_percent] || 0.0
           raise ArgumentError.new("Invalid shadow_traffic_delivery_percent, must be between 0 and 1") if @shadow_traffic_delivery_percent < 0 || @shadow_traffic_delivery_percent > 1.0
 
-          @delivery_endpoint = params[:delivery_endpoint].to_s
-          raise ArgumentError.new("delivery_endpoint is required") if @delivery_endpoint.empty?
+          @delivery_endpoint = params[:delivery_endpoint] || DEFAULT_DELIVERY_ENDPOINT
+          raise ArgumentError.new("delivery_endpoint is required") if @delivery_endpoint.strip.empty?
 
-          @metrics_endpoint = params[:metrics_endpoint].to_s
-          raise ArgumentError.new("metrics_endpoint is required") if @metrics_endpoint.empty?
+          @metrics_endpoint = params[:metrics_endpoint] || DEFAULT_METRICS_ENDPOINT
+          raise ArgumentError.new("metrics_endpoint is required") if @metrics_endpoint.strip.empty?
 
           @sampler = Sampler.new
         end

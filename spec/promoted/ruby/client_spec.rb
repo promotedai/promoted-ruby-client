@@ -11,11 +11,11 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
   context "initialization" do
     it "requires delivery endpoint" do
-      expect { described_class.new( { :metrics_endpoint => "foo" } ) }.to raise_error(ArgumentError, /delivery_endpoint/)
+      expect { described_class.new( { :metrics_endpoint => "foo", :delivery_endpoint => "   " } ) }.to raise_error(ArgumentError, /delivery_endpoint/)
     end
 
     it "requires metrics endpoint" do
-      expect { described_class.new( { :delivery_endpoint => "foo" } ) }.to raise_error(ArgumentError, /metrics_endpoint/)
+      expect { described_class.new( { :delivery_endpoint => "foo", :metrics_endpoint => "   " } ) }.to raise_error(ArgumentError, /metrics_endpoint/)
     end
 
     it "disallows too small shadow traffic percent" do
