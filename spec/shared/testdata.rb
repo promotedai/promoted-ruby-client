@@ -116,7 +116,7 @@ SAMPLE_INPUT_WITH_PROP =  {
   ]
 }.freeze
 
-SAMPLE_INPUT_CAMEL ={
+SAMPLE_INPUT_CAMEL = {
   "request": {
     "userInfo": {
       "logUserId": "logUserId1"
