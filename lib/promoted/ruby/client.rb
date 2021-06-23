@@ -44,7 +44,7 @@ module Promoted
         def send_request payload, endpoint, timeout_millis, headers={}
           response = Faraday.post(endpoint) do |req|
             req.headers                 = req.headers.merge!(headers) if headers
-            req.headers['Content-Type'] = 'application/json' if req.headers['Content-Type'].blank?
+            req.headers['Content-Type'] = 'application/json' if req.headers['Content-Type'].strip.empty?
             req.options.timeout         = timeout_millis / 1000
             req.body                    = payload.to_json
           end
