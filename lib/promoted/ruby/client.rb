@@ -15,7 +15,7 @@ module Promoted
   
         class Error < StandardError; end
 
-        attr_reader :perform_checks, :only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment,
+        attr_reader :perform_checks, :only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
                     :metrics_endpoint, :delivery_endpoint
         
         def initialize (params={})
@@ -27,7 +27,7 @@ module Promoted
           @only_log                = params[:only_log] || false
           @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
-          @should_apply_treatment  = params[:should_apply_treatment] || false
+          @should_apply_treatment_func  = params[:should_apply_treatment_func]
           
           @shadow_traffic_delivery_percent = params[:shadow_traffic_delivery_percent] || 0.0
           raise ArgumentError.new("Invalid shadow_traffic_delivery_percent, must be between 0 and 1") if @shadow_traffic_delivery_percent < 0 || @shadow_traffic_delivery_percent > 1.0
@@ -44,7 +44,7 @@ module Promoted
         def send_request payload, endpoint, timeout_millis, headers={}
           response = Faraday.post(endpoint) do |req|
             req.headers                 = req.headers.merge!(headers) if headers
-            req.headers['Content-Type'] = 'application/json' if req.headers['Content-Type'].strip.empty?
+            req.headers['Content-Type'] = req.headers['Content-Type'] || 'application/json'
             req.options.timeout         = timeout_millis / 1000
             req.body                    = payload.to_json
           end
@@ -57,8 +57,7 @@ module Promoted
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
           delivery_request_builder = RequestBuilder.new({
-            only_log: @only_log,
-            should_apply_treatment: @should_apply_treatment
+            only_log: @only_log
           })
           delivery_request_builder.set_request_params(args)
 
@@ -75,11 +74,11 @@ module Promoted
             cohort_membership_to_log = delivery_request_builder.new_cohort_membership_to_log
           end
   
-          if delivery_request_builder.should_apply_treatment
+          if should_apply_treatment
             delivery_request_params = delivery_request_builder.delivery_request_params
             response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers)
             insertions_from_promoted = true;
-            response_insertions = delivery_request_builder.fill_details_from_response(response.insertion)
+            response_insertions = delivery_request_builder.fill_details_from_response(response[:insertion])
           end
   
           request_to_log = nil
@@ -95,8 +94,7 @@ module Promoted
           end
 
           log_request_builder = RequestBuilder.new({
-            only_log: @only_log,
-            should_apply_treatment: @should_apply_treatment
+            only_log: @only_log
           })
           log_request = {
             :full_insertion => response_insertions,
@@ -137,8 +135,7 @@ module Promoted
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
           log_request_builder = RequestBuilder.new({
-            only_log: @only_log,
-            should_apply_treatment: @should_apply_treatment
+            only_log: @only_log
           })
 
           # Note: This method expects as JSON (string keys) but internally, RequestBuilder
@@ -161,6 +158,15 @@ module Promoted
           log_request_builder.log_request_params
         end
 
+        def should_apply_treatment
+          if @should_apply_treatment_func != nil
+            @should_apply_treatment_func
+          else
+            return true if @cohort_membership == nil || @cohort_membership[:arm] == nil
+            return @cohort_membership[:arm] != 'CONTROL'
+          end
+        end
+        
         # TODO: This probably just goes better in the RequestBuilder class.
         def pre_delivery_fillin_fields(log_request_builder)
           if log_request_builder.timing[:client_log_timestamp].nil?

@@ -115,3 +115,55 @@ SAMPLE_INPUT_WITH_PROP =  {
     }
   ]
 }.freeze
+
+SAMPLE_INPUT_CAMEL ={
+  "request": {
+    "userInfo": {
+      "logUserId": "logUserId1"
+    },
+    "useCase": "FEED",
+    "properties": {
+      "struct": {
+        "query": "fakequery"
+      }
+    }
+  },
+  "fullInsertion": [
+    {
+      "contentId": "product3",
+      "properties": {
+        "struct": {
+          "product": {
+            "id": "product3",
+            "title": "Product 3",
+            "url": "www.mymarket.com/p/3"
+          }
+        }
+      }
+    },
+    {
+      "contentId": "product2",
+      "properties": {
+        "struct": {
+          "product": {
+            "id": "product2",
+            "title": "Product 2",
+            "url": "www.mymarket.com/p/2"
+          }
+        }
+      }
+    },
+    {
+      "contentId": "product1",
+      "properties": {
+        "struct": {
+          "product": {
+            "id": "product1",
+            "title": "Product 1",
+            "url": "www.mymarket.com/p/1"
+          }
+        }
+      }
+    }
+  ]
+}.freeze

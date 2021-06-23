@@ -110,13 +110,13 @@ log_request.to_json
 ```
 # define a function using proc and it should use one argument.
 # Example
-to_compact_metrics_insertion = Proc.new do |insertion|
+to_compact_metrics_insertion_func = Proc.new do |insertion|
   insertion.delete(:properties)
   insertion
 end
 
 request_input = {
-  to_compact_metrics_insertion: to_compact_metrics_insertion,
+  to_compact_metrics_insertion_func: to_compact_metrics_insertion_func,
   request: {
     user_info: { user_id: "912", log_user_id: "912191"},
     use_case: "FEED",

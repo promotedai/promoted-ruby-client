@@ -2,13 +2,13 @@ module Promoted
   module Ruby
     module Client
       class RequestBuilder
-        attr_reader   :session_id, :should_apply_treatment,
-                      :view_id, :user_id, :insertion,
-                      :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion
+        attr_reader   :session_id, :should_apply_treatment_func,
+                      :view_id, :user_id, :insertion, :to_compact_delivery_insertion_func,
+                      :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion_func
 
         def initialize params={}
           @only_log                = params[:only_log] || false
-          @should_apply_treatment  = params[:should_apply_treatment] || false        
+          @should_apply_treatment_func  = params[:should_apply_treatment]
         end
 
         # Populates request parameters from the given arguments, presumed to be a hash of symbols.
@@ -22,7 +22,7 @@ module Promoted
           @full_insertion          = args[:full_insertion]
           @request_id              = SecureRandom.uuid
           
-          if request[:user_info]
+          if request[:user_info] != nil
             @user_info = request[:user_info]
             @user_id = @user_info[:user_id]
             @log_user_id = @user_info[:log_user_id]
@@ -35,7 +35,7 @@ module Promoted
             }
           end
 
-          if request[:timing]
+          if request[:timing] != nil
             @timing = request[:timing]
           else
             client_log_timestamp    = args[:client_log_timestamp] || Time.now.to_i
@@ -44,9 +44,19 @@ module Promoted
             }
           end
 
-          @to_compact_metrics_insertion            = args[:to_compact_metrics_insertion]
+          @to_compact_metrics_insertion_func       = args[:to_compact_metrics_insertion_func]
+          @to_compact_delivery_insertion_func      = args[:to_compact_delivery_insertion_func]
         end
 
+        def should_apply_treatment
+          if @should_apply_treatment_func != nil
+            @should_apply_treatment_func
+          else
+            return true if @cohort_membership == nil || @cohort_membership[:arm] == nil
+            return @cohort_membership[:arm] != 'CONTROL'
+          end
+        end
+        
         # Only used in delivery
         def new_cohort_membership_to_log
           return nil unless request[:experiment]
@@ -98,8 +108,12 @@ module Promoted
           @request
         end
 
-        def to_compact_metrics_insertion
-          @to_compact_metrics_insertion
+        def to_compact_metrics_insertion_func
+          @to_compact_metrics_insertion_func
+        end
+
+        def to_compact_delivery_insertion_func
+          @to_compact_delivery_insertion_func
         end
 
         def client_log_timestamp
@@ -215,7 +229,8 @@ module Promoted
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
-            insertion_obj                = @to_compact_metrics_insertion.call(insertion_obj) if @to_compact_metrics_insertion
+            # TODO: Toogle with the delivery func
+            insertion_obj                = @to_compact_metrics_insertion_func.call(insertion_obj) if @to_compact_metrics_insertion_func
             @insertion << insertion_obj.clean!
           end
           @insertion

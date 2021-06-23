@@ -4,6 +4,7 @@ ENDPOINTS = { :delivery_endpoint => "http://delivery.example.com", :metrics_endp
 
 RSpec.describe Promoted::Ruby::Client::PromotedClient do
   let!(:input) { Hash[SAMPLE_INPUT] }
+  let!(:deliver_input) { Hash[SAMPLE_INPUT_CAMEL] }
 
   it "has a version number" do
     expect(Promoted::Ruby::Client::VERSION).not_to be nil
@@ -136,7 +137,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
   context "copy and remove properties compact func" do
     let!(:input_with_prop) do
       input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop[:to_compact_metrics_insertion] = described_class.copy_and_remove_properties
+      input_with_prop[:to_compact_metrics_insertion_func] = described_class.copy_and_remove_properties
       input_with_prop
     end
 
@@ -149,8 +150,20 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
   end
 
+  context "deliver" do
+    it "delivers in a good case" do
+      client = described_class.new
+      full_insertion = deliver_input[:fullInsertion]
+      expect(client).to receive(:send_request).and_return({
+        :insertion => full_insertion
+      })
+      deliver_resp = client.deliver deliver_input
+      expect(deliver_resp).not_to be nil
+    end
+  end
+
   context "prepare_for_logging when user defined method is passed" do
-    let!(:to_compact_metrics_insertion) do
+    let!(:to_compact_metrics_insertion_func) do
       Proc.new do |insertion|
         insertion[:properties].delete(:invites_required)
         insertion[:properties].delete(:should_discount_addons)
@@ -161,7 +174,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
     let!(:input_with_prop) do
       input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop[:to_compact_metrics_insertion] = to_compact_metrics_insertion
+      input_with_prop[:to_compact_metrics_insertion_func] = to_compact_metrics_insertion_func
       input_with_prop
     end
 
