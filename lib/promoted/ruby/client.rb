@@ -47,7 +47,8 @@ module Promoted
             req.body                    = payload.to_json
           end
   
-          response.body
+          # TODO: Check response code, rescue on ParserError, etc.
+          JSON.parse(response.body, :symbolize_names => true)
         end
 
         def deliver args, headers={}
