@@ -150,8 +150,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
   end
 
   context "deliver" do
-    before(:each) do
-      @input = Hash[SAMPLE_INPUT_CAMEL]
+    before(:example) do
+      @input = Marshal.load(Marshal.dump(SAMPLE_INPUT_CAMEL))
     end
 
     it "delivers in a good case" do
@@ -161,6 +161,30 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         :insertion => full_insertion
       })
       deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp.key?(:insertion)).to be true
+
+      # No log request generated since there's no experiment and we delivered the request.
+      expect(deliver_resp[:log_request]).to be nil
+    end
+
+    it "can custom compact insertions" do
+      @input[:to_compact_delivery_insertion_func] = described_class.copy_and_remove_properties
+
+      client = described_class.new
+      full_insertion = @input[:fullInsertion]
+      delivery_req = nil
+      allow(client).to receive(:send_request) { |value|
+        delivery_req = value
+        { :insertion => full_insertion }
+      }
+
+      deliver_resp = client.deliver @input
+
+      delivery_req[:insertion].each do |insertion|
+        expect(insertion.key?(:properties)).to be false
+      end
+
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
 

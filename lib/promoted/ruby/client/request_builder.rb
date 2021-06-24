@@ -44,9 +44,7 @@ module Promoted
 
         # Only used in delivery
         def delivery_request_params
-          {
-            request: Hash[request].merge!(insertion: compact_insertions)
-          }
+          Hash[request].merge!(insertion: compact_delivery_insertions)
         end
 
         # Only used in delivery
@@ -105,12 +103,20 @@ module Promoted
             cohort_membership: @experiment
           }
           params[:request] = [request] if include_request
-          params[:insertion] = compact_insertions if include_insertions
+          params[:insertion] = compact_metrics_insertions if include_insertions
           
           params.clean!
         end
 
-        def compact_insertions
+        def compact_delivery_insertions
+          if !@to_compact_delivery_insertion_func
+            full_insertion
+          else
+            full_insertion.map {|insertion| @to_compact_delivery_insertion_func.call(insertion) }
+          end
+        end
+
+        def compact_metrics_insertions
           @insertion            = [] # insertion should be set according to the compact insertion
           paging                = request[:paging] || {}
           size                  = paging[:size] ? paging[:size].to_i : 0
@@ -130,7 +136,6 @@ module Promoted
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
-            # TODO: Toogle with the delivery func
             insertion_obj                = @to_compact_metrics_insertion_func.call(insertion_obj) if @to_compact_metrics_insertion_func
             @insertion << insertion_obj.clean!
           end
