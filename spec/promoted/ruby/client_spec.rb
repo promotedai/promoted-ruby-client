@@ -70,6 +70,15 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         expect(insertion[:insertion_id]).not_to be nil
       end
     end
+
+    # Exists for trying out Async HTTP in debugging
+    # it "will send a 'real' request" do
+    #   client = described_class.new({:delivery_endpoint => "https://httpbin.org/anything", :metrics_endpoint => "https://httpbin.org/anything" })
+    #   logging_json = client.prepare_for_logging(input)
+    #   resp = client.send_log_request logging_json
+    #   expect(resp).not_to be nil
+    #   #puts resp
+    # end
   end
 
   context "prepare_for_logging when no limit is set" do
@@ -172,6 +181,12 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req[:request].key?(:use_case)).to be true
       expect(delivery_req[:request].key?(:properties)).to be true
     end
+
+    # Exists for trying out Async HTTP in debugging
+    # it "will send a 'real' request" do
+    #   client = described_class.new({:shadow_traffic_delivery_percent => 1.0, :delivery_endpoint => "https://httpbin.org/anything", :metrics_endpoint => "https://httpbin.org/anything" })
+    #   expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
+    # end
   end
 
   context "copy and remove properties compact func" do
