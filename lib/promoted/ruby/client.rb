@@ -15,7 +15,7 @@ module Promoted
   
         class Error < StandardError; end
 
-        attr_reader :perform_checks, :only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
+        attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
                     :metrics_endpoint, :delivery_endpoint
         
         def initialize (params={})
@@ -24,7 +24,7 @@ module Promoted
             @perform_checks = params[:perform_checks]
           end
 
-          @only_log                = params[:only_log] || false
+          @default_only_log        = params[:default_only_log] || false
           @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
           @should_apply_treatment_func  = params[:should_apply_treatment_func]
@@ -56,9 +56,7 @@ module Promoted
         def deliver args, headers={}
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
-          delivery_request_builder = RequestBuilder.new({
-            only_log: @only_log
-          })
+          delivery_request_builder = RequestBuilder.new
           delivery_request_builder.set_request_params(args)
 
           if perform_checks?
@@ -70,15 +68,20 @@ module Promoted
           response_insertions = []
           cohort_membership_to_log = nil
           insertions_from_promoted = false
-          if !delivery_request_builder.only_log
+
+          only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
+          if !only_log
             cohort_membership_to_log = delivery_request_builder.new_cohort_membership_to_log
           end
   
-          if should_apply_treatment
+          if should_apply_treatment(cohort_membership_to_log)
             delivery_request_params = delivery_request_builder.delivery_request_params
+
+            # Call Delivery API
             response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers)
-            insertions_from_promoted = true;
+            
             response_insertions = delivery_request_builder.fill_details_from_response(response[:insertion])
+            insertions_from_promoted = true;
           end
   
           request_to_log = nil
@@ -93,21 +96,36 @@ module Promoted
             add_missing_ids_on_insertions! request_to_log, response_insertions
           end
 
-          log_request_builder = RequestBuilder.new({
-            only_log: @only_log
-          })
-          log_request = {
-            :full_insertion => response_insertions,
-            :cohort_membership => cohort_membership_to_log,
-            :request => request_to_log,
-            :platform_Id => delivery_request_builder.platform_id,
-            :timing => delivery_request_builder.timing,
-            :user_info => delivery_request_builder.user_info
-          }
-          log_request_builder.set_request_params(log_request)
-          pre_delivery_fillin_fields log_request_builder
+          log_req = nil
+          # We only return a log request if there's a request or cohort to log.
+          if request_to_log || cohort_membership_to_log
+            log_request_builder = RequestBuilder.new
+            log_request = {
+              :full_insertion => response_insertions,
+              :experiment => cohort_membership_to_log,
+              :request => request_to_log
+            }
+            log_request_builder.set_request_params(log_request)
 
-          log_request_builder.log_request_params
+            # We can't count on these being set already since request_to_log may be nil.
+            log_request_builder.platform_id = delivery_request_builder.platform_id
+            log_request_builder.timing      = delivery_request_builder.timing
+            log_request_builder.user_info   = delivery_request_builder.user_info
+            pre_delivery_fillin_fields log_request_builder
+
+
+            # On a successful delivery request, we don't log the insertions
+            # or the request since they are logged on the server-side.
+            log_req = log_request_builder.log_request_params(
+              include_insertions: !insertions_from_promoted, 
+              include_request: !insertions_from_promoted)
+          end
+
+          client_response = {
+            insertion: response_insertions,
+            log_request: log_req
+          }
+          return client_response
         end
 
         def add_missing_ids_on_insertions! request, insertions
@@ -134,9 +152,7 @@ module Promoted
         def prepare_for_logging args
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
-          log_request_builder = RequestBuilder.new({
-            only_log: @only_log
-          })
+          log_request_builder = RequestBuilder.new
 
           # Note: This method expects as JSON (string keys) but internally, RequestBuilder
           # transforms and works with symbol keys.
@@ -158,12 +174,13 @@ module Promoted
           log_request_builder.log_request_params
         end
 
-        def should_apply_treatment
+        def should_apply_treatment(cohort_membership)
           if @should_apply_treatment_func != nil
             @should_apply_treatment_func
           else
-            return true if @cohort_membership == nil || @cohort_membership[:arm] == nil
-            return @cohort_membership[:arm] != 'CONTROL'
+            return true if !cohort_membership
+            return true if !cohort_membership[:arm]
+            return cohort_membership[:arm] != Promoted::Ruby::Client::COHORT_ARM['CONTROL']
           end
         end
         

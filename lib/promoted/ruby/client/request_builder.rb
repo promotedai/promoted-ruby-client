@@ -2,52 +2,49 @@ module Promoted
   module Ruby
     module Client
       class RequestBuilder
-        attr_reader   :session_id, :user_info,
+        attr_reader   :session_id, :only_log, :experiment,
                       :view_id, :insertion, :to_compact_delivery_insertion_func,
                       :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion_func
 
-        def initialize params={}
-          @only_log                = params[:only_log] || false
-        end
+        attr_accessor :timing, :user_info, :platform_id
+
+        def initialize;end
 
         # Populates request parameters from the given arguments, presumed to be a hash of symbols.
         def set_request_params args = {}
           @request                 = args[:request] || {}
+          @experiment              = args[:experiment]
           @session_id              = request[:session_id]
           @platform_id             = request[:platform_id]
-          @cohort_membership       = request[:cohort_membership]
           @view_id                 = request[:view_id]
-          @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || 'UNKNOWN_USE_CASE'
+          @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || Promoted::Ruby::Client::USE_CASES['UNKNOWN_USE_CASE']
           @full_insertion          = args[:full_insertion]
           @request_id              = SecureRandom.uuid
           @user_info               = request[:user_info] || { :user_id => nil, :log_user_id => nil}
           @timing                  = request[:timing] || { :client_log_timestamp => Time.now.to_i }
-
+          @only_log                = request[:only_log]
           @to_compact_metrics_insertion_func       = args[:to_compact_metrics_insertion_func]
           @to_compact_delivery_insertion_func      = args[:to_compact_delivery_insertion_func]
         end
 
         # Only used in delivery
         def new_cohort_membership_to_log
-          return nil unless request[:experiment]
-          cohort_membership = Hash[request[:experiment]]
-          if !cohort_membership[:platform_id] && request[:platform_id]
-            cohort_membership[:platform_id] = request[:platform_id];
+          return nil unless @experiment
+          if !@experiment[:platform_id] && @platform_id
+            @experiment[:platform_id] = @platform_id
           end
-          if !cohort_membership[:user_info] && request[:user_info]
-            cohort_membership[:user_info] = request[:user_info]
+          if !@experiment[:user_info] && @user_info
+            @experiment[:user_info] = @user_info
           end
-          if !cohort_membership[:timing] && request[:timing]
-            cohort_membership[:timing] = request[:timing]
+          if !@experiment[:timing] && @timing
+            @experiment[:timing] = @timing
           end
-          return cohort_membership
+          return @experiment
         end
 
         # Only used in delivery
         def delivery_request_params
-          {
-            request: Hash[request].merge!(insertion: compact_insertions)
-          }
+          Hash[request].merge!(insertion: compact_delivery_insertions)
         end
 
         # Only used in delivery
@@ -74,28 +71,12 @@ module Promoted
           # TODO
         end
 
-        def request
-          @request
-        end
-
         def to_compact_metrics_insertion_func
           @to_compact_metrics_insertion_func
         end
 
         def to_compact_delivery_insertion_func
           @to_compact_delivery_insertion_func
-        end
-
-        def view_id
-          @view_id
-        end
-
-        def platform_id
-          @platform_id
-        end
-
-        def session_id
-          @session_id
         end
 
         # A list of the response Insertions.  This client expects lists to be truncated
@@ -115,49 +96,28 @@ module Promoted
           @default_request_values
         end
 
-        def only_log
-          @only_log
-        end
-
-        def full_insertion
-          @full_insertion
-        end
-
-        def user_info
-          @user_info
-        end
-
-        def timing
-          @timing
-        end
-
-        def request_id
-          @request_id
-        end
-
-        def log_request_params
-          {
+        def log_request_params(include_insertions: true, include_request: true)
+          params = {
             user_info: user_info,
             timing: timing,
-            request: [request],
-            insertion: compact_insertions
+            cohort_membership: @experiment
           }
+          params[:request] = [request] if include_request
+          params[:insertion] = compact_metrics_insertions if include_insertions
+          
+          params.clean!
         end
 
-        def request_params include_insertion: true
-          @request_params = {
-            user_info: user_info,
-            timing: timing,
-            request_id: request_id,
-            view_id: view_id,
-            session_id: session_id,
-            insertion: compact_insertions
-          }
-          @request_params.merge!({insertion: compact_insertions}) if include_insertion
-          @request_params
+        def compact_delivery_insertions
+          if !@to_compact_delivery_insertion_func
+            full_insertion
+          else
+            full_insertion.map {|insertion| @to_compact_delivery_insertion_func.call(insertion) }
+          end
         end
 
-        def compact_insertions
+        # TODO: This looks overly complicated.
+        def compact_metrics_insertions
           @insertion            = [] # insertion should be set according to the compact insertion
           paging                = request[:paging] || {}
           size                  = paging[:size] ? paging[:size].to_i : 0
@@ -177,7 +137,6 @@ module Promoted
             insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
-            # TODO: Toogle with the delivery func
             insertion_obj                = @to_compact_metrics_insertion_func.call(insertion_obj) if @to_compact_metrics_insertion_func
             @insertion << insertion_obj.clean!
           end

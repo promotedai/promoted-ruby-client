@@ -4,7 +4,6 @@ ENDPOINTS = { :delivery_endpoint => "http://delivery.example.com", :metrics_endp
 
 RSpec.describe Promoted::Ruby::Client::PromotedClient do
   let!(:input) { Hash[SAMPLE_INPUT] }
-  let!(:deliver_input) { Hash[SAMPLE_INPUT_CAMEL] }
 
   it "has a version number" do
     expect(Promoted::Ruby::Client::VERSION).not_to be nil
@@ -151,15 +150,85 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
   end
 
   context "deliver" do
+    before(:example) do
+      @input = Marshal.load(Marshal.dump(SAMPLE_INPUT_CAMEL))
+    end
+
     it "delivers in a good case" do
       client = described_class.new
-      full_insertion = deliver_input[:fullInsertion]
+      full_insertion = @input[:fullInsertion]
       expect(client).to receive(:send_request).and_return({
         :insertion => full_insertion
       })
-      deliver_resp = client.deliver deliver_input
+      deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
+      expect(deliver_resp.key?(:insertion)).to be true
+
+      # No log request generated since there's no experiment and we delivered the request.
+      expect(deliver_resp[:log_request]).to be nil
     end
+
+    it "can custom compact insertions" do
+      @input[:to_compact_delivery_insertion_func] = described_class.copy_and_remove_properties
+
+      client = described_class.new
+      full_insertion = @input[:fullInsertion]
+      delivery_req = nil
+      allow(client).to receive(:send_request) { |value|
+        delivery_req = value
+        { :insertion => full_insertion }
+      }
+
+      deliver_resp = client.deliver @input
+
+      delivery_req[:insertion].each do |insertion|
+        expect(insertion.key?(:properties)).to be false
+      end
+
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp.key?(:insertion)).to be true
+
+      # No log request generated since there's no experiment and we delivered the request.
+      expect(deliver_resp[:log_request]).to be nil
+    end
+  end
+
+  context "cohorts" do
+    before(:example) do
+      @input = Marshal.load(Marshal.dump(SAMPLE_INPUT_CAMEL))
+      @input["experiment"] = {
+        "cohortId" => "HOLD_OUT",
+        "arm" => "CHANGE ME"
+      }
+    end
+
+    it "does not deliver for control arm" do
+      client = described_class.new
+      @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
+      expect(client).not_to receive(:send_request)
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp[:log_request].key?(:insertion)).to be true
+      expect(deliver_resp[:log_request].key?(:request)).to be true
+      expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
+      expect(deliver_resp.key?(:insertion)).to be true
+    end
+
+    it "does deliver for treatment arm" do
+      full_insertion = @input[:fullInsertion]
+      client = described_class.new
+      @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
+      expect(client).to receive(:send_request).and_return({
+        :insertion => full_insertion
+      })
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp[:log_request].key?(:insertion)).to be false
+      expect(deliver_resp[:log_request].key?(:request)).to be false
+      expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
+      expect(deliver_resp.key?(:insertion)).to be true
+    end
+
   end
 
   context "prepare_for_logging when user defined method is passed" do
