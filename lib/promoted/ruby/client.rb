@@ -16,7 +16,7 @@ module Promoted
         class Error < StandardError; end
 
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
-                    :metrics_endpoint, :delivery_endpoint
+                    :metrics_endpoint, :delivery_endpoint, :default_request_headers
         
         def initialize (params={})
           @perform_checks = true
@@ -24,6 +24,7 @@ module Promoted
             @perform_checks = params[:perform_checks]
           end
 
+          @default_request_headers = params[:default_request_headers] || {}
           @default_only_log        = params[:default_only_log] || false
           @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
@@ -42,8 +43,9 @@ module Promoted
         end
         
         def send_request payload, endpoint, timeout_millis, headers={}
+          use_headers = @default_request_headers.merge headers
           response = Faraday.post(endpoint) do |req|
-            req.headers                 = req.headers.merge!(headers) if headers
+            req.headers                 = req.headers.merge!(use_headers) if use_headers
             req.headers['Content-Type'] = req.headers['Content-Type'] || 'application/json'
             req.options.timeout         = timeout_millis / 1000
             req.body                    = payload.to_json
@@ -149,7 +151,21 @@ module Promoted
           @sampler.sample_random?(@shadow_traffic_delivery_percent)
         end
 
-        def prepare_for_logging args
+        # Delivers shadow traffic from the given metrics args.
+        # Assumes that the args have already been normalized since this
+        # method should only be called from inside prepare_for_logging.
+        def deliver_shadow_traffic args, headers
+          delivery_request_builder = RequestBuilder.new
+          delivery_request_builder.set_request_params args
+
+          delivery_request_params = delivery_request_builder.delivery_request_params(should_compact: false)
+          delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
+
+          # Call Delivery API async (fire and forget)
+          send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers)
+        end
+
+        def prepare_for_logging args, headers={}
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
           log_request_builder = RequestBuilder.new
@@ -168,7 +184,7 @@ module Promoted
           pre_delivery_fillin_fields log_request_builder
 
           if should_send_as_shadow_traffic?
-            # TODO: Call deliver in the background to deliver shadow traffic
+            deliver_shadow_traffic args, headers
           end
 
           log_request_builder.log_request_params

@@ -4,6 +4,10 @@ ENDPOINTS = { :delivery_endpoint => "http://delivery.example.com", :metrics_endp
 
 RSpec.describe Promoted::Ruby::Client::PromotedClient do
   let!(:input) { Hash[SAMPLE_INPUT] }
+  let!(:input_with_prop) do
+    input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
+    input_with_prop
+  end
 
   it "has a version number" do
     expect(Promoted::Ruby::Client::VERSION).not_to be nil
@@ -106,30 +110,67 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
   end
 
   context "shadow traffic" do
+    let!(:input_with_unpaged) do
+      input_with_unpaged = Hash[SAMPLE_INPUT_WITH_PROP]
+      input_with_unpaged[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
+      input_with_unpaged
+    end
+
     it "throws if shadow traffic is on and request is prepaged" do
       dup_input                       = Hash[input]
       dup_input["insertion_page_type"] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
 
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
+      expect(client).not_to receive(:send_request)
       expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ShadowTrafficInsertionPageType)
     end
 
     it "throws if shadow traffic is on and request paging type is undefined" do
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
+      expect(client).not_to receive(:send_request)
       expect { client.prepare_for_logging(input) }.to raise_error(Promoted::Ruby::Client::ShadowTrafficInsertionPageType)
     end
 
     it "paging type is not checked when perform checks is off" do
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5, :perform_checks => false }))
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :perform_checks => false }))
+      expect(client).to receive(:send_request)
       expect { client.prepare_for_logging(input) }.not_to raise_error
     end
 
-    it "does not throw for unpaged insertions" do
-      dup_input                       = Hash[input]
-      dup_input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
+    it "samples in" do
+      srand(0)
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.6 }))
+      expect(client).to receive(:send_request)
+      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
+    end
 
+    it "samples out" do
+      srand(0)
       client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
-      expect { client.prepare_for_logging(dup_input) }.not_to raise_error
+      expect(client).not_to receive(:send_request)
+      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
+    end
+
+    it "works in a normal case" do
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
+
+      delivery_req = nil
+      expect(client).to receive(:send_request) {|value|
+        delivery_req = value
+      }
+
+      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
+
+      expect(delivery_req.key?(:insertion)).to be true
+      expect(delivery_req[:insertion].length()).to be 5
+      expect(delivery_req.key?(:timing)).to be true
+      expect(delivery_req.key?(:client_info)).to be true
+      expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
+      expect(delivery_req[:client_info][:client_type]).to be Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER']
+      expect(delivery_req.key?(:request)).to be true
+      expect(delivery_req[:request].key?(:user_info)).to be true
+      expect(delivery_req[:request].key?(:use_case)).to be true
+      expect(delivery_req[:request].key?(:properties)).to be true
     end
   end
 
