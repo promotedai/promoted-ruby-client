@@ -116,6 +116,7 @@ module Promoted
           end
         end
 
+        # TODO: This looks overly complicated.
         def compact_metrics_insertions
           @insertion            = [] # insertion should be set according to the compact insertion
           paging                = request[:paging] || {}
