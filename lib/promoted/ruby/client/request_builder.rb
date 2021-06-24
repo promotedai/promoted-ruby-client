@@ -2,7 +2,7 @@ module Promoted
   module Ruby
     module Client
       class RequestBuilder
-        attr_reader   :session_id, :only_log, :experiment,
+        attr_reader   :session_id, :only_log, :experiment, :client_info,
                       :view_id, :insertion, :to_compact_delivery_insertion_func,
                       :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion_func
 
@@ -16,6 +16,7 @@ module Promoted
           @experiment              = args[:experiment]
           @session_id              = request[:session_id]
           @platform_id             = request[:platform_id]
+          @client_info             = request[:client_info] || {}
           @view_id                 = request[:view_id]
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || Promoted::Ruby::Client::USE_CASES['UNKNOWN_USE_CASE']
           @full_insertion          = args[:full_insertion]
@@ -43,8 +44,17 @@ module Promoted
         end
 
         # Only used in delivery
-        def delivery_request_params
-          Hash[request].merge!(insertion: compact_delivery_insertions)
+        def delivery_request_params(should_compact: true)
+          params = {
+            user_info: user_info,
+            timing: timing,
+            cohort_membership: @experiment,
+            client_info: @client_info.merge({ :client_type => Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER'] })
+          }
+          params[:request] = request
+          params[:insertion] = should_compact ? compact_delivery_insertions : full_insertion
+
+          params.clean!
         end
 
         # Only used in delivery
@@ -100,7 +110,8 @@ module Promoted
           params = {
             user_info: user_info,
             timing: timing,
-            cohort_membership: @experiment
+            cohort_membership: @experiment,
+            client_info: @client_info
           }
           params[:request] = [request] if include_request
           params[:insertion] = compact_metrics_insertions if include_insertions

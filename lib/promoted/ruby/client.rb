@@ -1,13 +1,12 @@
+require "promoted/ruby/client/async_http_client"
 require "promoted/ruby/client/version"
-require 'faraday'
-require 'json'
 
 module Promoted
   module Ruby
     module Client
 
       DEFAULT_DELIVERY_TIMEOUT_MILLIS = 3000
-      DEFAULT_METRICS_TIMEOUT_MILLIS = 250
+      DEFAULT_METRICS_TIMEOUT_MILLIS = 3000
       DEFAULT_DELIVERY_ENDPOINT = "http://delivery.example.com"
       DEFAULT_METRICS_ENDPOINT = "http://metrics.example.com"
 
@@ -16,7 +15,7 @@ module Promoted
         class Error < StandardError; end
 
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
-                    :metrics_endpoint, :delivery_endpoint
+                    :default_request_headers
         
         def initialize (params={})
           @perform_checks = true
@@ -24,33 +23,43 @@ module Promoted
             @perform_checks = params[:perform_checks]
           end
 
+          @default_request_headers = params[:default_request_headers] || []
           @default_only_log        = params[:default_only_log] || false
-          @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
-          @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
           @should_apply_treatment_func  = params[:should_apply_treatment_func]
           
           @shadow_traffic_delivery_percent = params[:shadow_traffic_delivery_percent] || 0.0
           raise ArgumentError.new("Invalid shadow_traffic_delivery_percent, must be between 0 and 1") if @shadow_traffic_delivery_percent < 0 || @shadow_traffic_delivery_percent > 1.0
 
+          @sampler = Sampler.new
+
+          # HTTP Client creation
           @delivery_endpoint = params[:delivery_endpoint] || DEFAULT_DELIVERY_ENDPOINT
           raise ArgumentError.new("delivery_endpoint is required") if @delivery_endpoint.strip.empty?
 
           @metrics_endpoint = params[:metrics_endpoint] || DEFAULT_METRICS_ENDPOINT
           raise ArgumentError.new("metrics_endpoint is required") if @metrics_endpoint.strip.empty?
 
-          @sampler = Sampler.new
+          @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
+          @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
+          @api_key                 = params[:api_key] || nil
+
+          @http_client = AsyncHTTPClient.new
         end
         
-        def send_request payload, endpoint, timeout_millis, headers={}
-          response = Faraday.post(endpoint) do |req|
-            req.headers                 = req.headers.merge!(headers) if headers
-            req.headers['Content-Type'] = req.headers['Content-Type'] || 'application/json'
-            req.options.timeout         = timeout_millis / 1000
-            req.body                    = payload.to_json
+        def send_request payload, endpoint, timeout_millis, headers=[], send_async=false
+          use_headers = @default_request_headers.clone
+          headers.each do |h|
+            use_headers << h
           end
-  
-          # TODO: Check response code, rescue on ParserError, etc.
-          JSON.parse(response.body, :symbolize_names => true)
+          if @api_key
+            use_headers << ['x-api-key', @api_key]
+          end
+          
+          if send_async
+            @http_client.send_and_forget(endpoint, timeout_millis, payload, use_headers)
+          else
+            @http_client.send(endpoint, timeout_millis, payload, use_headers)
+          end
         end
 
         def deliver args, headers={}
@@ -149,7 +158,21 @@ module Promoted
           @sampler.sample_random?(@shadow_traffic_delivery_percent)
         end
 
-        def prepare_for_logging args
+        # Delivers shadow traffic from the given metrics args.
+        # Assumes that the args have already been normalized since this
+        # method should only be called from inside prepare_for_logging.
+        def deliver_shadow_traffic args, headers
+          delivery_request_builder = RequestBuilder.new
+          delivery_request_builder.set_request_params args
+
+          delivery_request_params = delivery_request_builder.delivery_request_params(should_compact: false)
+          delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
+
+          # Call Delivery API async (fire and forget)
+          send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers, true)
+        end
+
+        def prepare_for_logging args, headers={}
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
           log_request_builder = RequestBuilder.new
@@ -168,7 +191,7 @@ module Promoted
           pre_delivery_fillin_fields log_request_builder
 
           if should_send_as_shadow_traffic?
-            # TODO: Call deliver in the background to deliver shadow traffic
+            deliver_shadow_traffic args, headers
           end
 
           log_request_builder.log_request_params

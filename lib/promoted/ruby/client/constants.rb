@@ -23,6 +23,15 @@ module Promoted
                     'TREATMENT1' => 'TREATMENT1',
                     'TREATMENT2' => 'TREATMENT2',
                     'TREATMENT3' => 'TREATMENT3'}
+
+      TRAFFIC_TYPE = {'UNKNOWN_TRAFFIC_TYPE' => 'UNKNOWN_TRAFFIC_TYPE',
+                      'PRODUCTION' => 'PRODUCTION',
+                      'REPLAY' => 'REPLAY',
+                      'SHADOW' => 'SHADOW'}
+
+      CLIENT_TYPE = {'UNKNOWN_REQUEST_CLIENT' => 'UNKNOWN_REQUEST_CLIENT',
+                     'PLATFORM_SERVER' => 'PLATFORM_SERVER',
+                     'PLATFORM_CLIENT' => 'PLATFORM_CLIENT'}
     end
   end
 end
