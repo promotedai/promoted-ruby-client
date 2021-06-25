@@ -24,6 +24,8 @@ module Promoted
             @perform_checks = params[:perform_checks]
           end
 
+          @logger = params[:logger] || Logger.new(STDERR, :progname => "promotedai")
+
           @default_request_headers = params[:default_request_headers] || {}
           @default_request_headers['x-api-key'] = params[:api_key] || ''
 
@@ -62,7 +64,12 @@ module Promoted
               @http_client.send(endpoint, timeout_millis, payload, use_headers)
             end
           else
-            @http_client.send(endpoint, timeout_millis, payload, use_headers)
+            begin
+              @http_client.send(endpoint, timeout_millis, payload, use_headers)
+            rescue Faraday::Error => err
+              @logger.error(err) if @logger
+              raise EndpointError.new(err)
+            end
           end
         end
 
@@ -73,7 +80,12 @@ module Promoted
           delivery_request_builder.set_request_params(args)
 
           if perform_checks?
-            Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(args)
+            begin
+              Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(args)
+            rescue StandardError => err
+              @logger.error(err) if @logger
+              raise
+            end
           end
 
           pre_delivery_fillin_fields delivery_request_builder

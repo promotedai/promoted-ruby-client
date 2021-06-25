@@ -11,6 +11,7 @@ module Promoted
                     f.request :json
                     f.request :retry, max: 3
                     f.adapter :net_http
+                    f.use Faraday::Response::RaiseError # raises on 4xx and 5xx responses
                 end
             end
 
@@ -22,7 +23,6 @@ module Promoted
                     req.body                    = request.to_json
                   end
         
-                  # TODO: Check response code, rescue on ParserError, etc.
                   JSON.parse(response.body, :symbolize_names => true)
             end
         end
