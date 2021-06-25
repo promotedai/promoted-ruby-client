@@ -5,8 +5,10 @@ git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 # Specify your gem's dependencies in promoted-ruby-client.gemspec
 gemspec
 
-gem 'async-http'
-gem 'thread-local'
+gem 'faraday', '~> 1.4.1'
+gem 'faraday_middleware'
+gem 'faraday-net_http'
+gem 'concurrent-ruby', require: 'concurrent'
 gem 'byebug'
 
 group :development do

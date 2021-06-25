@@ -77,7 +77,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     #   logging_json = client.prepare_for_logging(input)
     #   resp = client.send_log_request logging_json
     #   expect(resp).not_to be nil
-    #   #puts resp
+    #   client.close
     # end
   end
 
@@ -186,6 +186,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     # it "will send a 'real' request" do
     #   client = described_class.new({:shadow_traffic_delivery_percent => 1.0, :delivery_endpoint => "https://httpbin.org/anything", :metrics_endpoint => "https://httpbin.org/anything" })
     #   expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
+    #   client.close
     # end
   end
 
