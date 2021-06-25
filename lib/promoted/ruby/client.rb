@@ -1,4 +1,5 @@
-require "promoted/ruby/client/async_http_client"
+require "concurrent-ruby"
+require "promoted/ruby/client/faraday_http_client"
 require "promoted/ruby/client/version"
 
 module Promoted
@@ -23,7 +24,9 @@ module Promoted
             @perform_checks = params[:perform_checks]
           end
 
-          @default_request_headers = params[:default_request_headers] || []
+          @default_request_headers = params[:default_request_headers] || {}
+          @default_request_headers['x-api-key'] = params[:api_key] || ''
+
           @default_only_log        = params[:default_only_log] || false
           @should_apply_treatment_func  = params[:should_apply_treatment_func]
           
@@ -41,22 +44,23 @@ module Promoted
 
           @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
-          @api_key                 = params[:api_key] || nil
 
-          @http_client = AsyncHTTPClient.new
+          @http_client = FaradayHTTPClient.new
+          @pool = Concurrent::CachedThreadPool.new
         end
         
+        def close
+          @pool.shutdown
+          @pool.wait_for_termination
+        end
+
         def send_request payload, endpoint, timeout_millis, headers=[], send_async=false
-          use_headers = @default_request_headers.clone
-          headers.each do |h|
-            use_headers << h
-          end
-          if @api_key
-            use_headers << ['x-api-key', @api_key]
-          end
+          use_headers = @default_request_headers.merge headers
           
           if send_async
-            @http_client.send_and_forget(endpoint, timeout_millis, payload, use_headers)
+            @pool.post do
+              @http_client.send(endpoint, timeout_millis, payload, use_headers)
+            end
           else
             @http_client.send(endpoint, timeout_millis, payload, use_headers)
           end
