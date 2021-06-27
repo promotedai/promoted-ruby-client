@@ -72,9 +72,7 @@ module Promoted
           delivery_request_builder = RequestBuilder.new
           delivery_request_builder.set_request_params(args)
 
-          if perform_checks?
-            Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(args)
-          end
+          perform_common_checks!(args) if perform_checks?
 
           pre_delivery_fillin_fields delivery_request_builder
   
@@ -185,7 +183,7 @@ module Promoted
           # transforms and works with symbol keys.
           log_request_builder.set_request_params(args)
           if perform_checks?
-            Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(args)
+            perform_common_checks! args
 
             if @shadow_traffic_delivery_percent > 0 && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
               raise ShadowTrafficInsertionPageType
@@ -199,6 +197,12 @@ module Promoted
           end
 
           log_request_builder.log_request_params
+        end
+
+        def perform_common_checks!(req)
+          Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(req)
+          Promoted::Ruby::Client::Validator.validate_metrics_request!(req)
+
         end
 
         def should_apply_treatment(cohort_membership)
@@ -236,5 +240,6 @@ require "promoted/ruby/client/request_builder"
 require "promoted/ruby/client/sampler"
 require "promoted/ruby/client/settings"
 require "promoted/ruby/client/util"
+require "promoted/ruby/client/validator"
 require 'byebug'
 require 'securerandom'
