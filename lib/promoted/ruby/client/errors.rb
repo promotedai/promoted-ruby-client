@@ -44,6 +44,9 @@ module Promoted
           super('Error calling Promoted.ai endpoint')
         end
       end
+
+      class ValidationError < StandardError
+      end
     end
   end
 end

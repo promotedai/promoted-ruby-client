@@ -33,6 +33,22 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
   end
 
+  context "validation on prepare" do
+    it "passes the request through the validator when perform checks" do
+      dup_input = Marshal.load(Marshal.dump(input))
+      dup_input.delete :request
+      client = described_class.new(ENDPOINTS.merge( { :logger => nil }))
+      expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
+    end
+
+    it "does not pass the request through the validator when no perform checks" do
+      dup_input = Marshal.load(Marshal.dump(input))
+      dup_input.delete :request
+      client = described_class.new(ENDPOINTS.merge( { :perform_checks => false, :logger => nil }))
+      expect { client.prepare_for_logging(dup_input) }.not_to raise_error
+    end
+  end
+
   context "prepare_for_logging when no limit is set" do
     it "has user_info set" do
       client = described_class.new(ENDPOINTS)
@@ -211,6 +227,25 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       @input = Marshal.load(Marshal.dump(SAMPLE_INPUT_CAMEL))
     end
 
+    context "validation on prepare" do
+      it "passes the request through the validator when perform checks" do
+        dup_input = Marshal.load(Marshal.dump(@input))
+        dup_input.delete :request
+        client = described_class.new
+        expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
+      end
+  
+      it "does not pass the request through the validator when no perform checks" do
+        dup_input = Marshal.load(Marshal.dump(@input))
+        dup_input.delete :request
+        client = described_class.new({ :perform_checks => false })
+        expect(client).to receive(:send_request).and_return({
+          :insertion => []
+        })
+        expect { client.deliver(dup_input) }.not_to raise_error
+      end
+    end
+    
     it "delivers in a good case" do
       client = described_class.new
       full_insertion = @input[:fullInsertion]
