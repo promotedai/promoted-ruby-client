@@ -49,6 +49,7 @@ module Promoted
 
           @http_client = FaradayHTTPClient.new
           @pool = Concurrent::CachedThreadPool.new
+          @validator = Promoted::Ruby::Client::Validator.new
         end
         
         def close
@@ -208,13 +209,12 @@ module Promoted
 
         def perform_common_checks!(req)
           begin
-            Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(req)
-            Promoted::Ruby::Client::Validator.validate_metrics_request!(req)
+            @validator.check_that_log_ids_not_set!(req)
+            @validator.validate_metrics_request!(req)
           rescue StandardError => err
             @logger.error(err) if @logger
             raise
           end
-
         end
 
         def should_apply_treatment(cohort_membership)
@@ -250,8 +250,6 @@ end
 # dependent /libs
 require "promoted/ruby/client/request_builder"
 require "promoted/ruby/client/sampler"
-require "promoted/ruby/client/settings"
 require "promoted/ruby/client/util"
 require "promoted/ruby/client/validator"
-require 'byebug'
 require 'securerandom'
