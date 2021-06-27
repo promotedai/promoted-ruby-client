@@ -36,6 +36,9 @@ module Promoted
           'Insertions must be unpaged when shadow traffic is on'
         end
       end
+
+      class ValidationError < StandardError
+      end
     end
   end
 end
