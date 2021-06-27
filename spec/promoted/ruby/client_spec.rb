@@ -37,14 +37,14 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "passes the request through the validator when perform checks" do
       dup_input = Marshal.load(Marshal.dump(input))
       dup_input.delete :request
-      client = described_class.new(ENDPOINTS)
+      client = described_class.new(ENDPOINTS.merge( { :logger => nil }))
       expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
     end
 
     it "does not pass the request through the validator when no perform checks" do
       dup_input = Marshal.load(Marshal.dump(input))
       dup_input.delete :request
-      client = described_class.new(ENDPOINTS.merge( { :perform_checks => false }))
+      client = described_class.new(ENDPOINTS.merge( { :perform_checks => false, :logger => nil }))
       expect { client.prepare_for_logging(dup_input) }.not_to raise_error
     end
   end

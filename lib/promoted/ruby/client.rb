@@ -24,6 +24,8 @@ module Promoted
             @perform_checks = params[:perform_checks]
           end
 
+          @logger = params[:logger] # Example:  Logger.new(STDERR, :progname => "promotedai")
+
           @default_request_headers = params[:default_request_headers] || {}
           @default_request_headers['x-api-key'] = params[:api_key] || ''
 
@@ -62,7 +64,12 @@ module Promoted
               @http_client.send(endpoint, timeout_millis, payload, use_headers)
             end
           else
-            @http_client.send(endpoint, timeout_millis, payload, use_headers)
+            begin
+              @http_client.send(endpoint, timeout_millis, payload, use_headers)
+            rescue Faraday::Error => err
+              @logger.error(err) if @logger
+              raise EndpointError.new(err)
+            end
           end
         end
 
@@ -200,8 +207,13 @@ module Promoted
         end
 
         def perform_common_checks!(req)
-          Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(req)
-          Promoted::Ruby::Client::Validator.validate_metrics_request!(req)
+          begin
+            Promoted::Ruby::Client::Settings.check_that_log_ids_not_set!(req)
+            Promoted::Ruby::Client::Validator.validate_metrics_request!(req)
+          rescue StandardError => err
+            @logger.error(err) if @logger
+            raise
+          end
 
         end
 
