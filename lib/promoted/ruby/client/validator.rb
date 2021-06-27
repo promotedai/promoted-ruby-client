@@ -4,8 +4,7 @@ module Promoted
         class Validator
             def self.validate_fields!(obj, obj_name, fields)
                 fields.each {|field|
-                    msg = field[:name] + " is required on " + obj_name
-                    raise ValidationError.new(msg) if !obj.has_key?(field[:name].to_sym)
+                    raise ValidationError.new(field[:name] + " is required on " + obj_name) if !obj.has_key?(field[:name].to_sym)
                 }
             end
 
