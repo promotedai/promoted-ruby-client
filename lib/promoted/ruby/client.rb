@@ -68,7 +68,6 @@ module Promoted
             begin
               @http_client.send(endpoint, timeout_millis, payload, use_headers)
             rescue Faraday::Error => err
-              @logger.error(err) if @logger
               raise EndpointError.new(err)
             end
           end
@@ -91,16 +90,24 @@ module Promoted
           only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
           if !only_log
             cohort_membership_to_log = delivery_request_builder.new_cohort_membership_to_log
-          end
-  
-          if should_apply_treatment(cohort_membership_to_log)
-            delivery_request_params = delivery_request_builder.delivery_request_params
 
-            # Call Delivery API
-            response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers)
-            
-            response_insertions = delivery_request_builder.fill_details_from_response(response[:insertion])
-            insertions_from_promoted = true;
+            if should_apply_treatment(cohort_membership_to_log)
+              delivery_request_params = delivery_request_builder.delivery_request_params
+  
+              # Call Delivery API
+              begin
+                response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers)
+              rescue  StandardError => err
+                # Currently we don't propagate errors to the SDK caller, but rather default to returning
+                # the request insertions.
+                @logger.error("Error calling delivery: " + err.message) if @logger
+              end
+              
+              if response != nil && response[:insertion] != nil
+                response_insertions = delivery_request_builder.fill_details_from_response(response[:insertion])
+                insertions_from_promoted = true;
+              end
+            end
           end
   
           request_to_log = nil
@@ -161,7 +168,12 @@ module Promoted
 
         # Sends a log request (previously created by a call to prepare_for_logging) to the metrics endpoint.
         def send_log_request log_request_params, headers={}
-          send_request(log_request_params, @metrics_endpoint, @metrics_timeout_millis, headers)
+          begin
+            send_request(log_request_params, @metrics_endpoint, @metrics_timeout_millis, headers)
+          rescue  StandardError => err
+            # Currently we don't propagate errors to the SDK caller.
+            @logger.error("Error from metrics: " + err.message) if @logger
+          end
         end
 
         def should_send_as_shadow_traffic?

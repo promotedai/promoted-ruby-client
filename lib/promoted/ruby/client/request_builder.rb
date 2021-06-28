@@ -14,6 +14,7 @@ module Promoted
         def set_request_params args = {}
           @request                 = args[:request] || {}
           @experiment              = args[:experiment]
+          @only_log                = args[:only_log]
           @session_id              = request[:session_id]
           @platform_id             = request[:platform_id]
           @client_info             = request[:client_info] || {}
@@ -23,7 +24,6 @@ module Promoted
           @request_id              = SecureRandom.uuid
           @user_info               = request[:user_info] || { :user_id => nil, :log_user_id => nil}
           @timing                  = request[:timing] || { :client_log_timestamp => Time.now.to_i }
-          @only_log                = request[:only_log]
           @to_compact_metrics_insertion_func       = args[:to_compact_metrics_insertion_func]
           @to_compact_delivery_insertion_func      = args[:to_compact_delivery_insertion_func]
         end
