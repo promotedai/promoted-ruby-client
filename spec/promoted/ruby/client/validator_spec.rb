@@ -207,25 +207,25 @@ RSpec.describe Promoted::Ruby::Client::Validator do
         it "should raise error for request_id" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:request_id] = SecureRandom.uuid
-            expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::RequestError)
+            expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /requestId should not be set/)
         end
     
         it "should raise error for request_id set in full_insertion" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:full_insertion].first[:request_id] = SecureRandom.uuid
-            expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::InsertionRequestIdError)
+            expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /Insertion.requestId should not be set/)
         end
     
         it "should raise insertion_id error for insertion" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:insertion] = []
-            expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::RequestInsertionError)
+            expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /Set full_insertion/)
         end
     
         it "should raise delivery_score error for insertion" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:full_insertion].first[:delivery_score] = 5
-            expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::DeliveryScoreError)
+            expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /deliveryScore should not be set/)
         end
     end
 end
