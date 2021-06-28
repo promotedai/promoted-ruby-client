@@ -18,6 +18,15 @@ module Promoted
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
                     :default_request_headers
         
+        # A common compact method implementation.
+        def self.copy_and_remove_properties
+          Proc.new do |insertion|
+            insertion = Hash[insertion]
+            insertion.delete(:properties)
+            insertion
+          end
+        end
+
         def initialize (params={})
           @perform_checks = true
           if params[:perform_checks] != nil
@@ -79,7 +88,7 @@ module Promoted
           delivery_request_builder = RequestBuilder.new
           delivery_request_builder.set_request_params(args)
 
-          perform_common_checks!(args) if perform_checks?
+          perform_common_checks!(args) if @perform_checks
 
           pre_delivery_fillin_fields delivery_request_builder
   
@@ -154,16 +163,29 @@ module Promoted
           return client_response
         end
 
-        def add_missing_ids_on_insertions! request, insertions
-          insertions.each do |insertion|
-            insertion[:insertion_id] = SecureRandom.uuid if not insertion[:insertion_id]
-            insertion[:session_id] = request[:session_id] if request[:session_id]
-            insertion[:request_id] = request[:request_id] if request[:request_id]
-          end
-        end
+        def prepare_for_logging args, headers={}
+          args = Promoted::Ruby::Client::Util.translate_args(args)
 
-        def perform_checks?
-          @perform_checks
+          log_request_builder = RequestBuilder.new
+
+          # Note: This method expects as JSON (string keys) but internally, RequestBuilder
+          # transforms and works with symbol keys.
+          log_request_builder.set_request_params(args)
+          if @perform_checks
+            perform_common_checks! args
+
+            if @shadow_traffic_delivery_percent > 0 && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
+              raise ShadowTrafficInsertionPageType
+            end
+          end
+          
+          pre_delivery_fillin_fields log_request_builder
+
+          if should_send_as_shadow_traffic?
+            deliver_shadow_traffic args, headers
+          end
+
+          log_request_builder.log_request_params
         end
 
         # Sends a log request (previously created by a call to prepare_for_logging) to the metrics endpoint.
@@ -173,6 +195,16 @@ module Promoted
           rescue  StandardError => err
             # Currently we don't propagate errors to the SDK caller.
             @logger.error("Error from metrics: " + err.message) if @logger
+          end
+        end
+
+        private
+
+        def add_missing_ids_on_insertions! request, insertions
+          insertions.each do |insertion|
+            insertion[:insertion_id] = SecureRandom.uuid if not insertion[:insertion_id]
+            insertion[:session_id] = request[:session_id] if request[:session_id]
+            insertion[:request_id] = request[:request_id] if request[:request_id]
           end
         end
 
@@ -192,31 +224,6 @@ module Promoted
 
           # Call Delivery API async (fire and forget)
           send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers, true)
-        end
-
-        def prepare_for_logging args, headers={}
-          args = Promoted::Ruby::Client::Util.translate_args(args)
-
-          log_request_builder = RequestBuilder.new
-
-          # Note: This method expects as JSON (string keys) but internally, RequestBuilder
-          # transforms and works with symbol keys.
-          log_request_builder.set_request_params(args)
-          if perform_checks?
-            perform_common_checks! args
-
-            if @shadow_traffic_delivery_percent > 0 && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
-              raise ShadowTrafficInsertionPageType
-            end
-          end
-          
-          pre_delivery_fillin_fields log_request_builder
-
-          if should_send_as_shadow_traffic?
-            deliver_shadow_traffic args, headers
-          end
-
-          log_request_builder.log_request_params
         end
 
         def perform_common_checks!(req)
@@ -243,15 +250,6 @@ module Promoted
         def pre_delivery_fillin_fields(log_request_builder)
           if log_request_builder.timing[:client_log_timestamp].nil?
             log_request_builder.timing[:client_log_timestamp] = Time.now.to_i
-          end
-        end
-
-        # A common compact method implementation.
-        def self.copy_and_remove_properties
-          Proc.new do |insertion|
-            insertion = Hash[insertion]
-            insertion.delete(:properties)
-            insertion
           end
         end
       end
