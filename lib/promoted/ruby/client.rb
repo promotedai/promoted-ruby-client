@@ -91,16 +91,16 @@ module Promoted
           only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
           if !only_log
             cohort_membership_to_log = delivery_request_builder.new_cohort_membership_to_log
-          end
-  
-          if should_apply_treatment(cohort_membership_to_log)
-            delivery_request_params = delivery_request_builder.delivery_request_params
 
-            # Call Delivery API
-            response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers)
-            
-            response_insertions = delivery_request_builder.fill_details_from_response(response[:insertion])
-            insertions_from_promoted = true;
+            if should_apply_treatment(cohort_membership_to_log)
+              delivery_request_params = delivery_request_builder.delivery_request_params
+  
+              # Call Delivery API
+              response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers)
+              
+              response_insertions = delivery_request_builder.fill_details_from_response(response[:insertion])
+              insertions_from_promoted = true;
+            end
           end
   
           request_to_log = nil
