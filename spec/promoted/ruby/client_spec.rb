@@ -222,6 +222,22 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
   end
 
+  context "log request" do
+    it "works in a good case" do
+      client = described_class.new
+      expect(client).to receive(:send_request)
+      logging_json = client.prepare_for_logging(input)
+      expect { client.send_log_request(logging_json) }.not_to raise_error
+    end  
+
+    it "swallows errors" do
+      client = described_class.new
+      expect(client).to receive(:send_request).and_raise(StandardError)
+      logging_json = client.prepare_for_logging(input)
+      expect { client.send_log_request(logging_json) }.not_to raise_error
+    end  
+  end
+
   context "deliver" do
     before(:example) do
       @input = Marshal.load(Marshal.dump(SAMPLE_INPUT_CAMEL))
@@ -258,6 +274,16 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).to be nil
+    end
+
+    it "swallows errors and defaults the insertions" do
+      client = described_class.new
+      expect(client).to receive(:send_request).and_raise(StandardError)
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp.key?(:insertion)).to be true
+      expect(deliver_resp[:insertion].length()).to eq(@input[:fullInsertion].length())
+      expect(deliver_resp[:log_request]).not_to be nil
     end
 
     it "can custom compact insertions" do
@@ -320,7 +346,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp.key?(:insertion)).to be true
     end
-
   end
 
   context "prepare_for_logging when user defined method is passed" do
