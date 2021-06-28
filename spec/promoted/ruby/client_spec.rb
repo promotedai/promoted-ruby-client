@@ -276,6 +276,29 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request]).to be nil
     end
 
+    it "does not delivery for request only_log" do
+      client = described_class.new
+      @input[:only_log] = true
+      expect(client).not_to receive(:send_request)
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp.key?(:insertion)).to be true
+
+      # No log request generated since there's no experiment and we delivered the request.
+      expect(deliver_resp[:log_request]).not_to be nil
+    end
+
+    it "does not delivery for default only_log" do
+      client = described_class.new( { :default_only_log => true } )
+      expect(client).not_to receive(:send_request)
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp.key?(:insertion)).to be true
+
+      # No log request generated since there's no experiment and we delivered the request.
+      expect(deliver_resp[:log_request]).not_to be nil
+    end
+
     it "swallows errors and defaults the insertions" do
       client = described_class.new
       expect(client).to receive(:send_request).and_raise(StandardError)
@@ -285,7 +308,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:insertion].length()).to eq(@input[:fullInsertion].length())
       expect(deliver_resp[:log_request]).not_to be nil
     end
-
+    
     it "can custom compact insertions" do
       @input[:to_compact_delivery_insertion_func] = described_class.copy_and_remove_properties
 
