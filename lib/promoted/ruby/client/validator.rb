@@ -139,13 +139,13 @@ module Promoted
             end
 
             def check_that_log_ids_not_set! req
-                raise RequestError if req.dig(:request, :request_id)
-                raise RequestInsertionError if req[:insertion]
+                raise ValidationError.new("Request.requestId should not be set") if req.dig(:request, :request_id)
+                raise ValidationError.new("Do not set Request.insertion.  Set full_insertion.") if req[:insertion]
       
                 req[:full_insertion].each do |insertion_hash|
-                  raise InsertionRequestIdError if insertion_hash[:request_id]
-                  raise InsertionIdError if insertion_hash[:insertion_id]
-                  raise DeliveryScoreError if insertion_hash[:delivery_score]
+                  raise ValidationError.new("Insertion.requestId should not be set") if insertion_hash[:request_id]
+                  raise ValidationError.new("'Insertion.insertionId should not be set") if insertion_hash[:insertion_id]
+                  raise ValidationError.new("Insertion.deliveryScore should not be set") if insertion_hash[:delivery_score]
                 end
               end      
         end
