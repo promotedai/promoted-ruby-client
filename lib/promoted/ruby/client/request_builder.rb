@@ -77,35 +77,6 @@ module Promoted
           filled_in_copy
         end
 
-        def validate_request_params
-          # TODO
-        end
-
-        def to_compact_metrics_insertion_func
-          @to_compact_metrics_insertion_func
-        end
-
-        def to_compact_delivery_insertion_func
-          @to_compact_delivery_insertion_func
-        end
-
-        # A list of the response Insertions.  This client expects lists to be truncated
-        # already to request.paging.size.  If not truncated, this client will truncate
-        # the list.
-        def insertion
-          @insertion
-        end
-
-        # A way to turn off logging.  Defaults to true.
-        def enabled?
-          @enabled
-        end
-
-        # Default values to use on DeliveryRequests.
-        def default_request_values
-          @default_request_values
-        end
-
         def log_request_params(include_insertions: true, include_request: true)
           params = {
             user_info: user_info,
@@ -154,6 +125,14 @@ module Promoted
           @insertion
         end
 
+        private
+
+        # A list of the response Insertions.  This client expects lists to be truncated
+        # already to request.paging.size.  If not truncated, this client will truncate
+        # the list.
+        def insertion
+          @insertion
+        end
       end
     end
   end

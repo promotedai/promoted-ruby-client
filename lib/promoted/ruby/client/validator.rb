@@ -2,18 +2,6 @@ module Promoted
     module Ruby
       module Client
         class Validator
-            def validate_fields!(obj, obj_name, fields)
-                fields.each {|field|
-                    if field[:required] then
-                        raise ValidationError.new(field[:name].to_s + " is required on " + obj_name) if !obj.has_key?(field[:name])
-                    end
-
-                    if field[:type] && obj.has_key?(field[:name]) then
-                        raise ValidationError.new(field[:name].to_s + " should be a " + field[:type].to_s) if !obj[field[:name]].is_a?(field[:type])
-                    end
-                }
-            end
-
             def validate_user_info!(ui)
                 validate_fields!(
                     ui,
@@ -147,7 +135,21 @@ module Promoted
                   raise ValidationError.new("'Insertion.insertionId should not be set") if insertion_hash[:insertion_id]
                   raise ValidationError.new("Insertion.deliveryScore should not be set") if insertion_hash[:delivery_score]
                 end
-              end      
+            end
+            
+            private
+
+            def validate_fields!(obj, obj_name, fields)
+                fields.each {|field|
+                    if field[:required] then
+                        raise ValidationError.new(field[:name].to_s + " is required on " + obj_name) if !obj.has_key?(field[:name])
+                    end
+
+                    if field[:type] && obj.has_key?(field[:name]) then
+                        raise ValidationError.new(field[:name].to_s + " should be a " + field[:type].to_s) if !obj[field[:name]].is_a?(field[:type])
+                    end
+                }
+            end
         end
       end
    end
