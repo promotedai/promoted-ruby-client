@@ -24,7 +24,7 @@ module Promoted
                   end
         
                   norm_headers = response.headers.transform_keys(&:downcase)
-                  if norm_headers["content-type"] == "application/json"
+                  if norm_headers["content-type"] != nil && norm_headers["content-type"].start_with?("application/json")
                     JSON.parse(response.body, :symbolize_names => true)
                   else
                     response.body
