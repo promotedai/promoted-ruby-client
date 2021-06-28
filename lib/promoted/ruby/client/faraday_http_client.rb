@@ -23,7 +23,12 @@ module Promoted
                     req.body                    = request.to_json
                   end
         
-                  JSON.parse(response.body, :symbolize_names => true)
+                  norm_headers = response.headers.transform_keys(&:downcase)
+                  if norm_headers["content-type"] == "application/json"
+                    JSON.parse(response.body, :symbolize_names => true)
+                  else
+                    response.body
+                  end
             end
         end
       end
