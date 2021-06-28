@@ -19,6 +19,12 @@ module Promoted
         end
       end
 
+      class DeliveryScoreError < StandardError
+        def message
+          'Insertion.deliveryScore should not be set'
+        end
+      end
+
       class InsertionIdError < StandardError
         def message
           'Insertion.insertionId should not be set'

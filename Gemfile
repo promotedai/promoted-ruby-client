@@ -9,7 +9,6 @@ gem 'faraday', '~> 1.4.1'
 gem 'faraday_middleware'
 gem 'faraday-net_http'
 gem 'concurrent-ruby', require: 'concurrent'
-gem 'byebug'
 
 group :development do
     gem 'ruby-debug-ide', group: :development
