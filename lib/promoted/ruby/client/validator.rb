@@ -145,6 +145,7 @@ module Promoted
                 req[:full_insertion].each do |insertion_hash|
                   raise InsertionRequestIdError if insertion_hash[:request_id]
                   raise InsertionIdError if insertion_hash[:insertion_id]
+                  raise DeliveryScoreError if insertion_hash[:delivery_score]
                 end
               end      
         end
