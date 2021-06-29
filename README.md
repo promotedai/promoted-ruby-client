@@ -35,7 +35,7 @@ The `prepare_for_logging` call assumes the client has already handled pagination
 ## Example to run the client
 
 Install our Ruby client.
-`promoted-ruby-client (0.1.2)`
+`promoted-ruby-client (0.1.3)`
 
 Or
 
@@ -234,3 +234,4 @@ input = {
   ]
 }
 ```
+
