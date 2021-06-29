@@ -355,6 +355,29 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp.key?(:insertion)).to be true
     end
 
+    it "does not deliver with custom treatment function" do
+      called_with = nil
+      should_apply_func = Proc.new do |cohort_membership|
+        called_with = cohort_membership
+        false
+      end
+
+      client = described_class.new({ :should_apply_treatment_func => should_apply_func })
+
+      @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
+      expect(client).not_to receive(:send_request)
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp[:log_request].key?(:insertion)).to be true
+      expect(deliver_resp[:log_request].key?(:request)).to be true
+      expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
+      expect(deliver_resp.key?(:insertion)).to be true
+      
+      expect(called_with[:arm]).to eq @input["experiment"]["arm"]
+      expect(called_with.key?(:timing)).to be true
+      expect(called_with.key?(:user_info)).to be true
+    end
+
     it "does deliver for treatment arm" do
       full_insertion = @input[:fullInsertion]
       client = described_class.new
@@ -368,6 +391,33 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request].key?(:request)).to be false
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp.key?(:insertion)).to be true
+    end
+
+    it "does deliver with custom treatment function" do
+      called_with = nil
+      should_apply_func = Proc.new do |cohort_membership|
+        called_with = cohort_membership
+        true
+      end
+
+      full_insertion = @input[:fullInsertion]
+
+      client = described_class.new({ :should_apply_treatment_func => should_apply_func })
+
+      @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
+      expect(client).to receive(:send_request).and_return({
+        :insertion => full_insertion
+      })
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp[:log_request].key?(:insertion)).to be false
+      expect(deliver_resp[:log_request].key?(:request)).to be false
+      expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
+      expect(deliver_resp.key?(:insertion)).to be true
+
+      expect(called_with[:arm]).to eq @input["experiment"]["arm"]
+      expect(called_with.key?(:timing)).to be true
+      expect(called_with.key?(:user_info)).to be true
     end
   end
 
