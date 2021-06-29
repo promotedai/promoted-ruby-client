@@ -30,7 +30,8 @@ This client will suffice for building log requests. To send actually send traffi
 client = Promoted::Ruby::Client::PromotedClient.new({
   :metrics_endpoint = "https://<get this from Promoted>",
   :delivery_endpoint = "https://<get this from Promoted>",
-  :api_key = "<get this from Promoted>"
+  :metrics_api_key = "<get this from Promoted>",
+  :delivery_api_key = "<get this from Promoted>"
 })
 ```
 
@@ -39,7 +40,8 @@ Name | Type | Description
 ---- | ---- | -----------
 ```:delivery_endpoint``` | String | POST URL for the Promoted Delivery API (get this from Promoted)
 ```:metrics_endpoint``` | String | POST URL for the Promoted Metrics API (get this from Promoted)
-```:api_key``` | String | Used as the ```x-api-key``` header on requests to Promoted (get this value from Promoted)
+```:metrics_api_key``` | String | Used as the ```x-api-key``` header on Metrics API requests to Promoted (get this value from Promoted)
+```:delivery_api_key``` | String | Used as the ```x-api-key``` header on Delivery API requests to Promoted (get this value from Promoted)
 ```:delivery_timeout_millis``` | Number | Timeout on the Delivery API call. Defaults to 3000.
 ```:metrics_timeout_millis``` | Number | Timeout on the Metrics API call. Defaults to 3000.
 ```:perform_checks``` | Boolean | Whether or not to perform detailed input validation, defaults to true but may be disabled for performance
