@@ -145,7 +145,8 @@ module Promoted
                         raise ValidationError.new(field[:name].to_s + " is required on " + obj_name) if !obj.has_key?(field[:name])
                     end
 
-                    if field[:type] && obj.has_key?(field[:name]) then
+                    # If a field is provided as non-nil, it should be of the correct type.
+                    if field[:type] && obj.has_key?(field[:name]) && obj[field[:name]] != nil then
                         raise ValidationError.new(field[:name].to_s + " should be a " + field[:type].to_s) if !obj[field[:name]].is_a?(field[:type])
                     end
                 }
