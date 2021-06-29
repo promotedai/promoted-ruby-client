@@ -197,7 +197,21 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req[:request].key?(:use_case)).to be true
       expect(delivery_req[:request].key?(:properties)).to be true
     end
-
+        
+    it "passes the endpoint and api key" do
+      client = described_class.new(ENDPOINTS.merge( { :shadow_traffic_delivery_percent => 1.0, :delivery_api_key => "my api key" } ))
+      recv_headers = nil
+      recv_endpoint = nil
+      allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
+        recv_endpoint = endpoint
+        recv_headers = headers
+      }
+      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
+      expect(recv_endpoint).to eq(ENDPOINTS[:delivery_endpoint])
+      expect(recv_headers.key?("x-api-key")).to be true
+      expect(recv_headers["x-api-key"]).to eq("my api key")
+    end  
+    
     # Exists for trying out Async HTTP in debugging
     # it "will send a 'real' request" do
     #   client = described_class.new({:shadow_traffic_delivery_percent => 1.0, :delivery_endpoint => "https://httpbin.org/anything", :metrics_endpoint => "https://httpbin.org/anything" })
@@ -236,6 +250,21 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       logging_json = client.prepare_for_logging(input)
       expect { client.send_log_request(logging_json) }.not_to raise_error
     end  
+
+    it "passes the endpoint and api key" do
+      client = described_class.new(ENDPOINTS.merge( { :metrics_api_key => "my api key" } ))
+      recv_headers = nil
+      recv_endpoint = nil
+      allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
+        recv_endpoint = endpoint
+        recv_headers = headers
+      }
+      logging_json = client.prepare_for_logging(input)
+      expect { client.send_log_request(logging_json) }.not_to raise_error
+      expect(recv_endpoint).to eq(ENDPOINTS[:metrics_endpoint])
+      expect(recv_headers.key?("x-api-key")).to be true
+      expect(recv_headers["x-api-key"]).to eq("my api key")
+    end  
   end
 
   context "deliver" do
@@ -262,6 +291,20 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       end
     end
     
+    it "passes the endpoint and api key" do
+      client = described_class.new(ENDPOINTS.merge( { :delivery_api_key => "my api key" } ))
+      recv_headers = nil
+      recv_endpoint = nil
+      allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
+        recv_endpoint = endpoint
+        recv_headers = headers
+      }
+      expect { client.deliver(input) }.not_to raise_error
+      expect(recv_endpoint).to eq(ENDPOINTS[:delivery_endpoint])
+      expect(recv_headers.key?("x-api-key")).to be true
+      expect(recv_headers["x-api-key"]).to eq("my api key")
+    end  
+        
     it "delivers in a good case" do
       client = described_class.new
       full_insertion = @input[:fullInsertion]
