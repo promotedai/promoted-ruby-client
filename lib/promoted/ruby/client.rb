@@ -57,8 +57,16 @@ module Promoted
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
 
           @http_client = FaradayHTTPClient.new
-          @pool = Concurrent::CachedThreadPool.new
           @validator = Promoted::Ruby::Client::Validator.new
+
+          # Thread pool to process delivery of shadow traffic. Will silently drop exccess requests beyond the queue
+          # size, and silently eat errors on the background threads.
+          @pool = Concurrent::ThreadPoolExecutor.new(
+            min_threads: 0,
+            max_threads: 10,
+            max_queue: 100,
+            fallback_policy: :discard
+          )
         end
         
         def close
