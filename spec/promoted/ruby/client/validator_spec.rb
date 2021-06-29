@@ -98,6 +98,12 @@ RSpec.describe Promoted::Ruby::Client::Validator do
             dup_input[:request][:user_info][:log_user_id] = 5
             expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /log_user_id/)
         end
+
+        it "allows nil as a value on optional types" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            dup_input[:request][:user_info][:user_id] = nil
+            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+        end
     
     end
 
