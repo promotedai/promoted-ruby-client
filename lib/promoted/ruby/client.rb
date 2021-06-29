@@ -238,7 +238,7 @@ module Promoted
 
         def should_apply_treatment(cohort_membership)
           if @should_apply_treatment_func != nil
-            @should_apply_treatment_func
+            @should_apply_treatment_func.call(cohort_membership)
           else
             return true if !cohort_membership
             return true if !cohort_membership[:arm]
