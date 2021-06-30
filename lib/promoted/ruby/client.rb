@@ -164,17 +164,19 @@ module Promoted
           # Note: This method expects as JSON (string keys) but internally, RequestBuilder
           # transforms and works with symbol keys.
           log_request_builder.set_request_params(args)
+          shadow_traffic_err = false
           if @perform_checks
             perform_common_checks! args
 
             if @shadow_traffic_delivery_percent > 0 && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
-              raise ShadowTrafficInsertionPageType
+              shadow_traffic_err = true
+              @logger.error(ShadowTrafficInsertionPageType.new) if @logger
             end
           end
           
           pre_delivery_fillin_fields log_request_builder
 
-          if should_send_as_shadow_traffic?
+          if !shadow_traffic_err && should_send_as_shadow_traffic?
             deliver_shadow_traffic args, headers
           end
 

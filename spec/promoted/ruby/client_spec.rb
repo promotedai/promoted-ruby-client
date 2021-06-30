@@ -141,19 +141,19 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       input_with_unpaged
     end
 
-    it "throws if shadow traffic is on and request is prepaged" do
+    it "does not throw if shadow traffic is on and request is prepaged" do
       dup_input                       = Hash[input]
       dup_input["insertion_page_type"] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
 
       client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
       expect(client).not_to receive(:send_request)
-      expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ShadowTrafficInsertionPageType)
+      expect { client.prepare_for_logging(dup_input) }.not_to raise_error
     end
 
-    it "throws if shadow traffic is on and request paging type is undefined" do
+    it "does not throw if shadow traffic is on and request paging type is undefined" do
       client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
       expect(client).not_to receive(:send_request)
-      expect { client.prepare_for_logging(input) }.to raise_error(Promoted::Ruby::Client::ShadowTrafficInsertionPageType)
+      expect { client.prepare_for_logging(input) }.not_to raise_error
     end
 
     it "paging type is not checked when perform checks is off" do
