@@ -59,7 +59,7 @@ module Promoted
           @http_client = FaradayHTTPClient.new
           @validator = Promoted::Ruby::Client::Validator.new
 
-          # Thread pool to process delivery of shadow traffic. Will silently drop exccess requests beyond the queue
+          # Thread pool to process delivery of shadow traffic. Will silently drop excess requests beyond the queue
           # size, and silently eat errors on the background threads.
           @pool = Concurrent::ThreadPoolExecutor.new(
             min_threads: 0,
