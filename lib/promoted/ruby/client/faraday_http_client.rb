@@ -19,7 +19,7 @@ module Promoted
                 response = @conn.post(endpoint) do |req|
                     req.headers                 = req.headers.merge(additional_headers) if additional_headers
                     req.headers['Content-Type'] = req.headers['Content-Type'] || 'application/json'
-                    req.options.timeout         = timeout_millis / 1000
+                    req.options.timeout         = timeout_millis.to_f / 1000
                     req.body                    = request.to_json
                   end
         
