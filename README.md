@@ -147,6 +147,7 @@ Method | Input | Output | Description
 ```prepare_for_logging``` | MetricsRequest | LogRequest | Builds a request suitable for logging locally and/or to Promoted, either via a subsequent call to ```send_log_request``` in the SDK client or by using this structure to make the call yourself. Optionally, based on client configuration may send a random subset of requests to Delivery API as shadow traffic for integration purposes.
 ```send_log_request``` | LogRequest | n/a | Forwards a LogRequest to Promoted using an HTTP client.
 ```deliver``` | DeliveryRequest | ClientResponse | Makes a request (subject to experimentation) to Delivery API for insertions, which are then returned along with a LogRequest.
+```close``` | n/a | n/a | Closes down the client at shutdown, currently this is just to drain the thread pool that handles shadow traffic.
 ---
 
 ## Metrics API
