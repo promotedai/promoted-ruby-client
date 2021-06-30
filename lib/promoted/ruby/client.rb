@@ -90,6 +90,7 @@ module Promoted
           insertions_from_promoted = false
 
           only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
+          deliver_err = false
           if !only_log
             cohort_membership_to_log = delivery_request_builder.new_cohort_membership_to_log
 
@@ -102,18 +103,18 @@ module Promoted
               rescue  StandardError => err
                 # Currently we don't propagate errors to the SDK caller, but rather default to returning
                 # the request insertions.
+                deliver_err = true
                 @logger.error("Error calling delivery: " + err.message) if @logger
               end
               
-              if response != nil && response[:insertion] != nil
-                response_insertions = delivery_request_builder.fill_details_from_response(response[:insertion])
-                insertions_from_promoted = true;
-              end
+              insertions_from_promoted = (response != nil && !deliver_err);
+              response_insertions = delivery_request_builder.fill_details_from_response(
+                response ? response[:insertion] : nil)
             end
           end
   
           request_to_log = nil
-          if !insertions_from_promoted
+          if !insertions_from_promoted then
             request_to_log = delivery_request_builder.request
             size = delivery_request_builder.request.dig(:paging, :size)
             response_insertions = size != nil ? delivery_request_builder.full_insertion[0..size] : delivery_request_builder.full_insertion
