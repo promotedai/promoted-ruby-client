@@ -11,6 +11,9 @@ module Promoted
       DEFAULT_DELIVERY_ENDPOINT = "http://delivery.example.com"
       DEFAULT_METRICS_ENDPOINT = "http://metrics.example.com"
 
+      ##
+      # Client for working with Promoted's Metrics and Delivery APIs.
+      # See {Github}[https://github.com/promotedai/promoted-ruby-client] for more info.
       class PromotedClient
   
         class Error < StandardError; end
@@ -18,6 +21,7 @@ module Promoted
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
                     :default_request_headers, :http_client
         
+        ##            
         # A common compact method implementation.
         def self.copy_and_remove_properties
           Proc.new do |insertion|
@@ -27,6 +31,8 @@ module Promoted
           end
         end
 
+        ##
+        # Create and configure a new Promoted client.
         def initialize (params={})
           @perform_checks = true
           if params[:perform_checks] != nil
@@ -70,11 +76,15 @@ module Promoted
           )
         end
         
+        ##
+        # Politely shut down a Promoted client.
         def close
           @pool.shutdown
           @pool.wait_for_termination
         end
 
+        ##
+        # Make a delivery request.
         def deliver args, headers={}
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
@@ -157,6 +167,9 @@ module Promoted
           return client_response
         end
 
+        ##
+        # Generate a log request for a subsequent call to send_log_request
+        # or for logging via alternative means.
         def prepare_for_logging args, headers={}
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
@@ -184,6 +197,7 @@ module Promoted
           log_request_builder.log_request_params
         end
 
+        ##
         # Sends a log request (previously created by a call to prepare_for_logging) to the metrics endpoint.
         def send_log_request log_request_params, headers={}
           begin
