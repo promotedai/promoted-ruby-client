@@ -6,7 +6,7 @@ module Promoted
   module Ruby
     module Client
 
-      DEFAULT_DELIVERY_TIMEOUT_MILLIS = 3000
+      DEFAULT_DELIVERY_TIMEOUT_MILLIS = 250
       DEFAULT_METRICS_TIMEOUT_MILLIS = 3000
       DEFAULT_DELIVERY_ENDPOINT = "http://delivery.example.com"
       DEFAULT_METRICS_ENDPOINT = "http://metrics.example.com"

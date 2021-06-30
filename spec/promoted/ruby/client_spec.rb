@@ -198,18 +198,21 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req[:request].key?(:properties)).to be true
     end
         
-    it "passes the endpoint and api key" do
-      client = described_class.new(ENDPOINTS.merge( { :shadow_traffic_delivery_percent => 1.0, :delivery_api_key => "my api key" } ))
+    it "passes the endpoint, timeout, and api key" do
+      client = described_class.new(ENDPOINTS.merge( { :shadow_traffic_delivery_percent => 1.0, :delivery_api_key => "my api key", :delivery_timeout_millis => 777 } ))
       recv_headers = nil
       recv_endpoint = nil
+      recv_timeout = nil
       allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
         recv_endpoint = endpoint
         recv_headers = headers
+        recv_timeout = timeout
       }
       expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
       expect(recv_endpoint).to eq(ENDPOINTS[:delivery_endpoint])
       expect(recv_headers.key?("x-api-key")).to be true
       expect(recv_headers["x-api-key"]).to eq("my api key")
+      expect(recv_timeout).to eq(777)
     end  
     
     # Exists for trying out Async HTTP in debugging
@@ -251,19 +254,22 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect { client.send_log_request(logging_json) }.not_to raise_error
     end  
 
-    it "passes the endpoint and api key" do
-      client = described_class.new(ENDPOINTS.merge( { :metrics_api_key => "my api key" } ))
+    it "passes the endpoint, timeout, and api key" do
+      client = described_class.new(ENDPOINTS.merge( { :metrics_api_key => "my api key", :metrics_timeout_millis => 777 } ))
       recv_headers = nil
       recv_endpoint = nil
+      recv_timeout = nil
       allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
         recv_endpoint = endpoint
         recv_headers = headers
+        recv_timeout = timeout
       }
       logging_json = client.prepare_for_logging(input)
       expect { client.send_log_request(logging_json) }.not_to raise_error
       expect(recv_endpoint).to eq(ENDPOINTS[:metrics_endpoint])
       expect(recv_headers.key?("x-api-key")).to be true
       expect(recv_headers["x-api-key"]).to eq("my api key")
+      expect(recv_timeout).to eq(777)
     end  
   end
 
