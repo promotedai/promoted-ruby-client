@@ -138,7 +138,7 @@ Output of ```deliver```, includes the insertions as well as a suitable ```LogReq
 Field Name | Type | Optional? | Description
 ---------- | ---- | --------- | -----------
 ```:insertion``` | [] of Insertion | No | The insertions, which are from Delivery API (when ```deliver``` was called, i.e. we weren't either only-log or part of an experiment) or the input insertions (when the other conditions don't hold).
-```:log_request``` | LogRequest | No | A message suitable for logging to Metrics API via ```send_log_request```.
+```:log_request``` | LogRequest | Yes | A message suitable for logging to Metrics API via ```send_log_request```. If the call to ```deliver``` was made (i.e. the request was not part of the CONTROL arm of an experiment or marked to only log), ```:log_request``` will not be set, as you can assume logging was performed on the server-side by Promoted.
 ---
 
 ### PromotedClient
@@ -229,7 +229,7 @@ client = Promoted::Ruby::Client::PromotedClient.new
 log_request = client.prepare_for_logging(metrics_request)
 
 # Log (assuming you have configured your client with a :metrics_endpoint)
-#client.send_log_request(log_request)
+client.send_log_request(log_request)
 ```
 
 ## Delivery API
@@ -264,8 +264,9 @@ client_response = client.deliver(delivery_request)
 # Use the resulting insertions
 client_response[:insertion]
 
-# Log
-client.send_log_request(client_response[:log_request])
+# Log if a log request was provided (if not, deliver was called successfully
+# and Promoted logged on the server-side).)
+client.send_log_request(client_response[:log_request]) if client_response[:log_request]
 ```
 
 ### TODO Experimentation example
