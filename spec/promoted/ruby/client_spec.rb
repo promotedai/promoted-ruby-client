@@ -141,19 +141,19 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       input_with_unpaged
     end
 
-    it "throws if shadow traffic is on and request is prepaged" do
+    it "does not throw if shadow traffic is on and request is prepaged" do
       dup_input                       = Hash[input]
       dup_input["insertion_page_type"] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
 
       client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
       expect(client).not_to receive(:send_request)
-      expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ShadowTrafficInsertionPageType)
+      expect { client.prepare_for_logging(dup_input) }.not_to raise_error
     end
 
-    it "throws if shadow traffic is on and request paging type is undefined" do
+    it "does not throw if shadow traffic is on and request paging type is undefined" do
       client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
       expect(client).not_to receive(:send_request)
-      expect { client.prepare_for_logging(input) }.to raise_error(Promoted::Ruby::Client::ShadowTrafficInsertionPageType)
+      expect { client.prepare_for_logging(input) }.not_to raise_error
     end
 
     it "paging type is not checked when perform checks is off" do
@@ -197,7 +197,21 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req[:request].key?(:use_case)).to be true
       expect(delivery_req[:request].key?(:properties)).to be true
     end
-
+        
+    it "passes the endpoint and api key" do
+      client = described_class.new(ENDPOINTS.merge( { :shadow_traffic_delivery_percent => 1.0, :delivery_api_key => "my api key" } ))
+      recv_headers = nil
+      recv_endpoint = nil
+      allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
+        recv_endpoint = endpoint
+        recv_headers = headers
+      }
+      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
+      expect(recv_endpoint).to eq(ENDPOINTS[:delivery_endpoint])
+      expect(recv_headers.key?("x-api-key")).to be true
+      expect(recv_headers["x-api-key"]).to eq("my api key")
+    end  
+    
     # Exists for trying out Async HTTP in debugging
     # it "will send a 'real' request" do
     #   client = described_class.new({:shadow_traffic_delivery_percent => 1.0, :delivery_endpoint => "https://httpbin.org/anything", :metrics_endpoint => "https://httpbin.org/anything" })
@@ -236,6 +250,21 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       logging_json = client.prepare_for_logging(input)
       expect { client.send_log_request(logging_json) }.not_to raise_error
     end  
+
+    it "passes the endpoint and api key" do
+      client = described_class.new(ENDPOINTS.merge( { :metrics_api_key => "my api key" } ))
+      recv_headers = nil
+      recv_endpoint = nil
+      allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
+        recv_endpoint = endpoint
+        recv_headers = headers
+      }
+      logging_json = client.prepare_for_logging(input)
+      expect { client.send_log_request(logging_json) }.not_to raise_error
+      expect(recv_endpoint).to eq(ENDPOINTS[:metrics_endpoint])
+      expect(recv_headers.key?("x-api-key")).to be true
+      expect(recv_headers["x-api-key"]).to eq("my api key")
+    end  
   end
 
   context "deliver" do
@@ -262,6 +291,20 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       end
     end
     
+    it "passes the endpoint and api key" do
+      client = described_class.new(ENDPOINTS.merge( { :delivery_api_key => "my api key" } ))
+      recv_headers = nil
+      recv_endpoint = nil
+      allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
+        recv_endpoint = endpoint
+        recv_headers = headers
+      }
+      expect { client.deliver(input) }.not_to raise_error
+      expect(recv_endpoint).to eq(ENDPOINTS[:delivery_endpoint])
+      expect(recv_headers.key?("x-api-key")).to be true
+      expect(recv_headers["x-api-key"]).to eq("my api key")
+    end  
+        
     it "delivers in a good case" do
       client = described_class.new
       full_insertion = @input[:fullInsertion]
@@ -355,6 +398,29 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp.key?(:insertion)).to be true
     end
 
+    it "does not deliver with custom treatment function" do
+      called_with = nil
+      should_apply_func = Proc.new do |cohort_membership|
+        called_with = cohort_membership
+        false
+      end
+
+      client = described_class.new({ :should_apply_treatment_func => should_apply_func })
+
+      @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
+      expect(client).not_to receive(:send_request)
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp[:log_request].key?(:insertion)).to be true
+      expect(deliver_resp[:log_request].key?(:request)).to be true
+      expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
+      expect(deliver_resp.key?(:insertion)).to be true
+      
+      expect(called_with[:arm]).to eq @input["experiment"]["arm"]
+      expect(called_with.key?(:timing)).to be true
+      expect(called_with.key?(:user_info)).to be true
+    end
+
     it "does deliver for treatment arm" do
       full_insertion = @input[:fullInsertion]
       client = described_class.new
@@ -368,6 +434,33 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request].key?(:request)).to be false
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp.key?(:insertion)).to be true
+    end
+
+    it "does deliver with custom treatment function" do
+      called_with = nil
+      should_apply_func = Proc.new do |cohort_membership|
+        called_with = cohort_membership
+        true
+      end
+
+      full_insertion = @input[:fullInsertion]
+
+      client = described_class.new({ :should_apply_treatment_func => should_apply_func })
+
+      @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
+      expect(client).to receive(:send_request).and_return({
+        :insertion => full_insertion
+      })
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp[:log_request].key?(:insertion)).to be false
+      expect(deliver_resp[:log_request].key?(:request)).to be false
+      expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
+      expect(deliver_resp.key?(:insertion)).to be true
+
+      expect(called_with[:arm]).to eq @input["experiment"]["arm"]
+      expect(called_with.key?(:timing)).to be true
+      expect(called_with.key?(:user_info)).to be true
     end
   end
 

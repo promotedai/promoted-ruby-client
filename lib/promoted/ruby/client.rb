@@ -16,7 +16,7 @@ module Promoted
         class Error < StandardError; end
 
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
-                    :default_request_headers
+                    :default_request_headers, :http_client
         
         # A common compact method implementation.
         def self.copy_and_remove_properties
@@ -36,7 +36,8 @@ module Promoted
           @logger = params[:logger] # Example:  Logger.new(STDERR, :progname => "promotedai")
 
           @default_request_headers = params[:default_request_headers] || {}
-          @default_request_headers['x-api-key'] = params[:api_key] || ''
+          @metrics_api_key = params[:metrics_api_key] || ''
+          @delivery_api_key = params[:delivery_api_key] || ''
 
           @default_only_log        = params[:default_only_log] || false
           @should_apply_treatment_func  = params[:should_apply_treatment_func]
@@ -57,29 +58,21 @@ module Promoted
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
 
           @http_client = FaradayHTTPClient.new
-          @pool = Concurrent::CachedThreadPool.new
           @validator = Promoted::Ruby::Client::Validator.new
+
+          # Thread pool to process delivery of shadow traffic. Will silently drop excess requests beyond the queue
+          # size, and silently eat errors on the background threads.
+          @pool = Concurrent::ThreadPoolExecutor.new(
+            min_threads: 0,
+            max_threads: 10,
+            max_queue: 100,
+            fallback_policy: :discard
+          )
         end
         
         def close
           @pool.shutdown
           @pool.wait_for_termination
-        end
-
-        def send_request payload, endpoint, timeout_millis, headers=[], send_async=false
-          use_headers = @default_request_headers.merge headers
-          
-          if send_async
-            @pool.post do
-              @http_client.send(endpoint, timeout_millis, payload, use_headers)
-            end
-          else
-            begin
-              @http_client.send(endpoint, timeout_millis, payload, use_headers)
-            rescue Faraday::Error => err
-              raise EndpointError.new(err)
-            end
-          end
         end
 
         def deliver args, headers={}
@@ -105,7 +98,7 @@ module Promoted
   
               # Call Delivery API
               begin
-                response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers)
+                response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers)
               rescue  StandardError => err
                 # Currently we don't propagate errors to the SDK caller, but rather default to returning
                 # the request insertions.
@@ -171,17 +164,19 @@ module Promoted
           # Note: This method expects as JSON (string keys) but internally, RequestBuilder
           # transforms and works with symbol keys.
           log_request_builder.set_request_params(args)
+          shadow_traffic_err = false
           if @perform_checks
             perform_common_checks! args
 
             if @shadow_traffic_delivery_percent > 0 && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
-              raise ShadowTrafficInsertionPageType
+              shadow_traffic_err = true
+              @logger.error(ShadowTrafficInsertionPageType.new) if @logger
             end
           end
           
           pre_delivery_fillin_fields log_request_builder
 
-          if should_send_as_shadow_traffic?
+          if !shadow_traffic_err && should_send_as_shadow_traffic?
             deliver_shadow_traffic args, headers
           end
 
@@ -191,7 +186,7 @@ module Promoted
         # Sends a log request (previously created by a call to prepare_for_logging) to the metrics endpoint.
         def send_log_request log_request_params, headers={}
           begin
-            send_request(log_request_params, @metrics_endpoint, @metrics_timeout_millis, headers)
+            send_request(log_request_params, @metrics_endpoint, @metrics_timeout_millis, @metrics_api_key, headers)
           rescue  StandardError => err
             # Currently we don't propagate errors to the SDK caller.
             @logger.error("Error from metrics: " + err.message) if @logger
@@ -199,6 +194,24 @@ module Promoted
         end
 
         private
+
+        def send_request payload, endpoint, timeout_millis, api_key, headers={}, send_async=false
+          headers["x-api-key"] = api_key
+          use_headers = @default_request_headers.merge headers
+          
+          if send_async
+            @pool.post do
+              @http_client.send(endpoint, timeout_millis, payload, use_headers)
+            end
+          else
+            begin
+              @http_client.send(endpoint, timeout_millis, payload, use_headers)
+            rescue Faraday::Error => err
+              raise EndpointError.new(err)
+            end
+          end
+        end
+
 
         def add_missing_ids_on_insertions! request, insertions
           insertions.each do |insertion|
@@ -223,7 +236,7 @@ module Promoted
           delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
 
           # Call Delivery API async (fire and forget)
-          send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, headers, true)
+          send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers, true)
         end
 
         def perform_common_checks!(req)
@@ -238,7 +251,7 @@ module Promoted
 
         def should_apply_treatment(cohort_membership)
           if @should_apply_treatment_func != nil
-            @should_apply_treatment_func
+            @should_apply_treatment_func.call(cohort_membership)
           else
             return true if !cohort_membership
             return true if !cohort_membership[:arm]
