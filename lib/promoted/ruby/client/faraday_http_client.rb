@@ -10,8 +10,8 @@ module Promoted
                 @conn = Faraday.new do |f|
                     f.request :json
                     f.request :retry, max: 3
-                    f.adapter :net_http
                     f.use Faraday::Response::RaiseError # raises on 4xx and 5xx responses
+                    f.adapter :net_http
                 end
             end
 
