@@ -119,7 +119,7 @@ module Promoted
               
               insertions_from_promoted = (response != nil && !deliver_err);
               response_insertions = delivery_request_builder.fill_details_from_response(
-                response ? response[:insertion] : nil)
+                response ? response[:insertion] : [])
             end
           end
   

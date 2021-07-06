@@ -64,6 +64,17 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(logging_json[:full_insertion]).to be nil
     end
 
+    it "can deal with empty insertions" do
+      dup_input = Hash[input]
+      dup_input[:full_insertion] = []
+
+      client = described_class.new(ENDPOINTS)
+      logging_json = client.prepare_for_logging(dup_input)
+
+      # No need to log empty assertions so we nil it out.
+      expect(logging_json[:full_insertion]).to be nil
+    end
+
     it "should have insertion set" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
