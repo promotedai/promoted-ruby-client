@@ -48,10 +48,16 @@ module Promoted
           params = {
             user_info: user_info,
             timing: timing,
-            cohort_membership: @experiment,
-            client_info: @client_info.merge({ :client_type => Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER'] })
+            client_info: @client_info.merge({ :client_type => Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER'] }),
+            platform_id: @platform_id,
+            request_id: @request_id,
+            view_id: @view_id,
+            session_id: @session_id,
+            use_case: @use_case,
+            search_query: request[:search_query],
+            properties: request[:properties],
+            paging: request[:paging]
           }
-          params[:request] = request
           params[:insertion] = should_compact ? compact_delivery_insertions : full_insertion
 
           params.clean!
