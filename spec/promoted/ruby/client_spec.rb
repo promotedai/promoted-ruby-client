@@ -203,10 +203,11 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req.key?(:client_info)).to be true
       expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
       expect(delivery_req[:client_info][:client_type]).to be Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER']
-      expect(delivery_req.key?(:request)).to be true
-      expect(delivery_req[:request].key?(:user_info)).to be true
-      expect(delivery_req[:request].key?(:use_case)).to be true
-      expect(delivery_req[:request].key?(:properties)).to be true
+      expect(delivery_req.key?(:user_info)).to be true
+      expect(delivery_req.key?(:use_case)).to be true
+      expect(delivery_req.key?(:properties)).to be true
+      expect(delivery_req.key?(:request_id)).to be true
+      pp delivery_req.to_json
     end
         
     it "passes the endpoint, timeout, and api key" do
