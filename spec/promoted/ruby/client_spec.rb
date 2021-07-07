@@ -171,7 +171,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :perform_checks => false }))
       expect(client).to receive(:send_request)
       expect { client.prepare_for_logging(input) }.not_to raise_error
-      client.close
     end
 
     it "samples in" do
@@ -179,7 +178,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.6 }))
       expect(client).to receive(:send_request)
       expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-      client.close
     end
 
     it "samples out" do
@@ -190,7 +188,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
 
     it "works in a normal case" do
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
+      client = described_class.new(ENDPOINTS.merge({:shadow_traffic_delivery_percent => 1.0 }))
 
       delivery_req = nil
       expect(client).to receive(:send_request) {|value|
@@ -198,7 +196,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       }
 
       expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-      client.close
 
       expect(delivery_req.key?(:insertion)).to be true
       expect(delivery_req[:insertion].length()).to be 5
@@ -223,8 +220,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         recv_timeout = timeout
       }
       expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-      client.close
-
       expect(recv_endpoint).to eq(ENDPOINTS[:delivery_endpoint])
       expect(recv_headers.key?("x-api-key")).to be true
       expect(recv_headers["x-api-key"]).to eq("my api key")

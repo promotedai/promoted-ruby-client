@@ -28,10 +28,10 @@ This client will suffice for building log requests. To send actually send traffi
 
 ```rb
 client = Promoted::Ruby::Client::PromotedClient.new({
-  :metrics_endpoint = "https://<get this from Promoted>",
-  :delivery_endpoint = "https://<get this from Promoted>",
-  :metrics_api_key = "<get this from Promoted>",
-  :delivery_api_key = "<get this from Promoted>"
+  :metrics_endpoint => "https://<get this from Promoted>",
+  :delivery_endpoint => "https://<get this from Promoted>",
+  :metrics_api_key => "<get this from Promoted>",
+  :delivery_api_key => "<get this from Promoted>"
 })
 ```
 
