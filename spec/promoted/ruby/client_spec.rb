@@ -207,7 +207,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req.key?(:use_case)).to be true
       expect(delivery_req.key?(:properties)).to be true
       expect(delivery_req.key?(:request_id)).to be true
-      pp delivery_req.to_json
     end
         
     it "passes the endpoint, timeout, and api key" do
