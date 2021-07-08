@@ -19,7 +19,9 @@ module Promoted
         class Error < StandardError; end
 
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
-                    :default_request_headers, :http_client
+                    :default_request_headers, :http_client, :logger
+                    
+        attr_accessor :request_logging_on
         
         ##            
         # A common compact method implementation.
@@ -39,7 +41,8 @@ module Promoted
             @perform_checks = params[:perform_checks]
           end
 
-          @logger = params[:logger] # Example:  Logger.new(STDERR, :progname => "promotedai")
+          @logger               = params[:logger] # Example:  Logger.new(STDERR, :progname => "promotedai")
+          @request_logging_on   = params[:request_logging_on] || false
 
           @default_request_headers = params[:default_request_headers] || {}
           @metrics_api_key = params[:metrics_api_key] || ''
@@ -214,6 +217,12 @@ module Promoted
           headers["x-api-key"] = api_key
           use_headers = @default_request_headers.merge headers
           
+          if @request_logging_on && @logger
+            @logger.info("promotedai") {
+              "Sending #{payload.to_json} to #{endpoint}"
+            }
+          end
+
           if send_async
             @pool.post do
               @http_client.send(endpoint, timeout_millis, payload, use_headers)
