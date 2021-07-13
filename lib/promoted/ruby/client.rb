@@ -19,7 +19,7 @@ module Promoted
         class Error < StandardError; end
 
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
-                    :default_request_headers, :http_client, :logger
+                    :default_request_headers, :http_client, :logger, :shadow_traffic_delivery_percent, :async_shadow_traffic
                     
         attr_accessor :request_logging_on
         
@@ -69,21 +69,31 @@ module Promoted
           @http_client = FaradayHTTPClient.new
           @validator = Promoted::Ruby::Client::Validator.new
 
-          # Thread pool to process delivery of shadow traffic. Will silently drop excess requests beyond the queue
-          # size, and silently eat errors on the background threads.
-          @pool = Concurrent::ThreadPoolExecutor.new(
-            min_threads: 0,
-            max_threads: 10,
-            max_queue: 100,
-            fallback_policy: :discard
-          )
+          @async_shadow_traffic = true
+          if params[:async_shadow_traffic] != nil
+            @async_shadow_traffic = params[:async_shadow_traffic] || false
+          end
+
+          @pool = nil
+          if @async_shadow_traffic
+            # Thread pool to process delivery of shadow traffic. Will silently drop excess requests beyond the queue
+            # size, and silently eat errors on the background threads.
+            @pool = Concurrent::ThreadPoolExecutor.new(
+              min_threads: 0,
+              max_threads: 10,
+              max_queue: 100,
+              fallback_policy: :discard
+            )
+          end
         end
         
         ##
         # Politely shut down a Promoted client.
         def close
-          @pool.shutdown
-          @pool.wait_for_termination
+          if @pool
+            @pool.shutdown
+            @pool.wait_for_termination
+          end
         end
 
         ##
@@ -214,6 +224,8 @@ module Promoted
         private
 
         def send_request payload, endpoint, timeout_millis, api_key, headers={}, send_async=false
+          resp = nil
+
           headers["x-api-key"] = api_key
           use_headers = @default_request_headers.merge headers
           
@@ -223,17 +235,27 @@ module Promoted
             }
           end
 
-          if send_async
+          if send_async && @pool
             @pool.post do
-              @http_client.send(endpoint, timeout_millis, payload, use_headers)
+              start_time = Time.now.to_i
+              begin
+                resp = @http_client.send(endpoint, timeout_millis, payload, use_headers)
+              rescue Faraday::Error => err
+                @logger.warn("Deliver call failed with #{err}") if @logger
+                return
+              end
+              ellapsed_time = Time.now.to_i - start_time
+              @logger.info("Deliver call completed in #{ellapsed_time} ms") if @logger
             end
           else
             begin
-              @http_client.send(endpoint, timeout_millis, payload, use_headers)
+              resp = @http_client.send(endpoint, timeout_millis, payload, use_headers)
             rescue Faraday::Error => err
               raise EndpointError.new(err)
             end
           end
+
+          return resp
         end
 
 
@@ -300,3 +322,4 @@ require "promoted/ruby/client/sampler"
 require "promoted/ruby/client/util"
 require "promoted/ruby/client/validator"
 require 'securerandom'
+require 'time'
