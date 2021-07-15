@@ -21,7 +21,6 @@ module Promoted
           @view_id                 = request[:view_id]
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || Promoted::Ruby::Client::USE_CASES['UNKNOWN_USE_CASE']
           @full_insertion          = args[:full_insertion]
-          @request_id              = SecureRandom.uuid
           @user_info               = request[:user_info] || { :user_id => nil, :log_user_id => nil}
           @timing                  = request[:timing] || { :client_log_timestamp => Time.now.to_i }
           @to_compact_metrics_insertion_func       = args[:to_compact_metrics_insertion_func]
@@ -50,7 +49,6 @@ module Promoted
             timing: timing,
             client_info: @client_info.merge({ :client_type => Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER'] }),
             platform_id: @platform_id,
-            request_id: @request_id,
             view_id: @view_id,
             session_id: @session_id,
             use_case: @use_case,

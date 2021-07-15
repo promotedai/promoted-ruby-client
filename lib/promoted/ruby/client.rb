@@ -21,8 +21,14 @@ module Promoted
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
                     :default_request_headers, :http_client, :logger, :shadow_traffic_delivery_percent, :async_shadow_traffic
                     
-        attr_accessor :request_logging_on
+        attr_accessor :request_logging_on, :enabled
         
+        ##
+        # Whether or not the client is currently enabled for execution.
+        def enabled?
+          @enabled
+        end
+
         ##            
         # A common compact method implementation.
         def self.copy_and_remove_properties
@@ -85,6 +91,11 @@ module Promoted
               fallback_policy: :discard
             )
           end
+
+          @enabled = true
+          if params[:enabled] != nil
+            @enabled = params[:enabled] || false
+          end
         end
         
         ##
@@ -101,6 +112,14 @@ module Promoted
         def deliver args, headers={}
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
+          # Respect the enabled state
+          if !@enabled
+            return {
+              insertion: apply_paging(args[:full_insertion], args[:request][:paging])
+              # No log request returned when disabled
+            }
+          end
+          
           delivery_request_builder = RequestBuilder.new
           delivery_request_builder.set_request_params(args)
 
@@ -139,12 +158,10 @@ module Promoted
           request_to_log = nil
           if !insertions_from_promoted then
             request_to_log = delivery_request_builder.request
-            size = delivery_request_builder.request.dig(:paging, :size)
-            response_insertions = size != nil ? delivery_request_builder.full_insertion[0..size] : delivery_request_builder.full_insertion
+            response_insertions = apply_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
           end
 
           if request_to_log
-            request_to_log[:request_id] = SecureRandom.uuid if not request_to_log[:request_id]
             add_missing_ids_on_insertions! request_to_log, response_insertions
           end
 
@@ -186,6 +203,12 @@ module Promoted
         def prepare_for_logging args, headers={}
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
+          if !@enabled
+            return {
+              insertion: args[:full_insertion]
+            }
+          end
+
           log_request_builder = RequestBuilder.new
 
           # Note: This method expects as JSON (string keys) but internally, RequestBuilder
@@ -222,6 +245,14 @@ module Promoted
         end
 
         private
+
+        def apply_paging full_insertion, paging
+          size = nil
+          if paging
+            size = paging[:size]
+          end
+          return size != nil ? full_insertion[0..size - 1] : full_insertion
+        end
 
         def send_request payload, endpoint, timeout_millis, api_key, headers={}, send_async=false
           resp = nil
@@ -263,7 +294,6 @@ module Promoted
           insertions.each do |insertion|
             insertion[:insertion_id] = SecureRandom.uuid if not insertion[:insertion_id]
             insertion[:session_id] = request[:session_id] if request[:session_id]
-            insertion[:request_id] = request[:request_id] if request[:request_id]
           end
         end
 

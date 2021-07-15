@@ -82,11 +82,11 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(logging_json[:insertion]).not_to be nil
     end
 
-    it "should have request_id set" do
+    it "should not have request_id set, the API will set this" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
       logging_json[:insertion].each do |insertion|
-        expect(insertion[:request_id]).not_to be nil
+        expect(insertion[:request_id]).to be nil
       end
     end
 
@@ -209,7 +209,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req.key?(:user_info)).to be true
       expect(delivery_req.key?(:use_case)).to be true
       expect(delivery_req.key?(:properties)).to be true
-      expect(delivery_req.key?(:request_id)).to be true
     end
         
     it "passes the endpoint, timeout, and api key" do
@@ -426,6 +425,61 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).to be nil
+    end
+  end
+
+  context "enabled" do
+    before(:example) do
+      @input = Marshal.load(Marshal.dump(SAMPLE_INPUT_CAMEL))
+    end
+
+    it "defaults to enabled" do
+      client = described_class.new
+      expect(client.enabled?).to be true
+    end
+
+    it "can be initialized to enabled" do
+      client = described_class.new({ :enabled => true })
+      expect(client.enabled?).to be true
+    end
+
+    it "can be initialized to disabled" do
+      client = described_class.new({ :enabled => false })
+      expect(client.enabled?).to be false
+    end
+
+    it "can be toggled" do
+      client = described_class.new
+      expect(client.enabled?).to be true
+      client.enabled = false
+      expect(client.enabled?).to be false
+      client.enabled = true
+      expect(client.enabled?).to be true
+    end
+
+    it "does not deliver when disabled, no paging" do
+      client = described_class.new({ :enabled => false })
+      resp = client.deliver @input
+      expect(client).not_to receive(:send_request)
+      expect(resp[:insertion].length).to be 3
+      expect(resp[:log_request]).to be nil
+    end
+
+    it "does not deliver when disabled, with paging" do
+      dup_input = Marshal.load(Marshal.dump(@input))
+      dup_input[:request][:paging] = { size: 1, offset: 0 }
+
+      client = described_class.new({ :enabled => false })
+      resp = client.deliver dup_input
+      expect(client).not_to receive(:send_request)
+      expect(resp[:insertion].length).to be 1
+      expect(resp[:log_request]).to be nil
+    end
+
+    it "preempts prepare_for_logging when disabled" do
+      client = described_class.new({ :enabled => false })
+      logging_json = client.prepare_for_logging(@input)
+      expect(logging_json[:request]).to be nil
     end
   end
 
