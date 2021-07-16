@@ -129,7 +129,7 @@ module Promoted
   
           response_insertions = []
           cohort_membership_to_log = nil
-          insertions_from_promoted = false
+          insertions_from_delivery = false
 
           only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
           deliver_err = false
@@ -149,20 +149,16 @@ module Promoted
                 @logger.error("Error calling delivery: " + err.message) if @logger
               end
               
-              insertions_from_promoted = (response != nil && !deliver_err);
+              insertions_from_delivery = (response != nil && !deliver_err);
               response_insertions = delivery_request_builder.fill_details_from_response(
                 response ? response[:insertion] : [])
             end
           end
   
           request_to_log = nil
-          if !insertions_from_promoted then
+          if !insertions_from_delivery then
             request_to_log = delivery_request_builder.request
             response_insertions = apply_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
-          end
-
-          if request_to_log
-            add_missing_ids_on_insertions! request_to_log, response_insertions
           end
 
           log_req = nil
@@ -186,8 +182,8 @@ module Promoted
             # On a successful delivery request, we don't log the insertions
             # or the request since they are logged on the server-side.
             log_req = log_request_builder.log_request_params(
-              include_insertions: !insertions_from_promoted, 
-              include_request: !insertions_from_promoted)
+              include_insertions: !insertions_from_delivery, 
+              include_request: !insertions_from_delivery)
           end
 
           client_response = {
@@ -287,14 +283,6 @@ module Promoted
           end
 
           return resp
-        end
-
-
-        def add_missing_ids_on_insertions! request, insertions
-          insertions.each do |insertion|
-            insertion[:insertion_id] = SecureRandom.uuid if not insertion[:insertion_id]
-            insertion[:session_id] = request[:session_id] if request[:session_id]
-          end
         end
 
         def should_send_as_shadow_traffic?
