@@ -82,11 +82,13 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(logging_json[:insertion]).not_to be nil
     end
 
-    it "should not have request_id set, the API will set this" do
+    it "should have request_id set since insertions aren't coming from delivery" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
+      expect(logging_json[:request].length).to eq 1
+      expect(logging_json[:request][0][:request_id]).not_to be nil
       logging_json[:insertion].each do |insertion|
-        expect(insertion[:request_id]).to be nil
+        expect(insertion[:request_id]).not_to be nil
       end
     end
 
@@ -209,6 +211,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req.key?(:user_info)).to be true
       expect(delivery_req.key?(:use_case)).to be true
       expect(delivery_req.key?(:properties)).to be true
+
+      # Requests sent to delivery do not have request ids set.
+      expect(delivery_req.key?(:request_id)).to be false
     end
         
     it "passes the endpoint, timeout, and api key" do
@@ -260,6 +265,13 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(client).to receive(:send_request)
       logging_json = client.prepare_for_logging(input)
       expect { client.send_log_request(logging_json) }.not_to raise_error
+
+      # prepare_for_logging should set request and insertion ids
+      expect(logging_json[:request].length).to eq 1
+      expect(logging_json[:request][0][:request_id]).not_to be nil
+      logging_json[:insertion].each do |insertion|
+        expect(insertion[:request_id]).not_to be nil
+      end
     end  
 
     it "swallows errors" do
@@ -370,7 +382,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request]).to be nil
     end
 
-    it "does not delivery for request only_log" do
+    it "does not deliver for request only_log" do
       client = described_class.new
       @input[:only_log] = true
       expect(client).not_to receive(:send_request)
@@ -382,7 +394,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request]).not_to be nil
     end
 
-    it "does not delivery for default only_log" do
+    it "does not deliver for default only_log" do
       client = described_class.new( { :default_only_log => true } )
       expect(client).not_to receive(:send_request)
       deliver_resp = client.deliver @input
@@ -502,6 +514,14 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request].key?(:request)).to be true
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp.key?(:insertion)).to be true
+
+      # Since we did not deliver, log request should have ids set
+      logging_json = deliver_resp[:log_request]
+      expect(logging_json[:request].length).to eq 1
+      expect(logging_json[:request][0][:request_id]).not_to be nil
+      logging_json[:insertion].each do |insertion|
+        expect(insertion[:request_id]).not_to be nil
+      end
     end
 
     it "does not deliver with custom treatment function" do
@@ -525,6 +545,14 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(called_with[:arm]).to eq @input["experiment"]["arm"]
       expect(called_with.key?(:timing)).to be true
       expect(called_with.key?(:user_info)).to be true
+
+      # Since we did not deliver, log request should have ids set
+      logging_json = deliver_resp[:log_request]
+      expect(logging_json[:request].length).to eq 1
+      expect(logging_json[:request][0][:request_id]).not_to be nil
+      logging_json[:insertion].each do |insertion|
+        expect(insertion[:request_id]).not_to be nil
+      end
     end
 
     it "does deliver for treatment arm" do

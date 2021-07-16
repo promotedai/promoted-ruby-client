@@ -34,7 +34,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
 
   context "log_request_params" do
     it "should return expected logging object" do
-      request_builder = subject.class.new
+      request_builder = subject.class.new({:id_generator => FakeIdGenerator.new })
       request_builder.set_request_params(input)
       prepare_for_logging_obj = request_builder.log_request_params
       output = {
@@ -56,43 +56,49 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                       {
                         :query=>{}
                       }
-                    }
+                    },
+                    request_id: "10"
                   }],
                   insertion:
                   [{
                     content_id: "5b4a6512326bd9777abfabc34",
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: prepare_for_logging_obj[:insertion][0][:insertion_id],
-                    position: 0
+                    insertion_id: "10",
+                    position: 0,
+                    request_id: "10"
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabea",
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: prepare_for_logging_obj[:insertion][1][:insertion_id],
-                    position: 1
+                    insertion_id: "10",
+                    position: 1,
+                    request_id: "10"
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: prepare_for_logging_obj[:insertion][2][:insertion_id],
-                    position: 2
+                    insertion_id: "10",
+                    position: 2,
+                    request_id: "10"
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: prepare_for_logging_obj[:insertion][3][:insertion_id],
-                    position: 3
+                    insertion_id: "10",
+                    position: 3,
+                    request_id: "10"
                   },
                   {
                     content_id: "5b4a6512326bd9777abfabcf",
                     user_info: {user_id: "912", log_user_id: "91232"},
                     timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: prepare_for_logging_obj[:insertion][4][:insertion_id],
-                    position: 4
+                    insertion_id: "10",
+                    position: 4,
+                    request_id: "10"
                   }]
                 }
       expect( prepare_for_logging_obj == output ).to be_truthy

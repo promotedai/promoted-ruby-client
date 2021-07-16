@@ -8,7 +8,13 @@ module Promoted
 
         attr_accessor :timing, :user_info, :platform_id
 
-        def initialize;end
+        def initialize args = {}
+          if args[:id_generator]
+            @id_generator = args[:id_generator]
+          else
+            @id_generator = IdGenerator.new
+          end
+        end
 
         # Populates request parameters from the given arguments, presumed to be a hash of symbols.
         def set_request_params args = {}
@@ -92,8 +98,16 @@ module Promoted
             cohort_membership: @experiment,
             client_info: @client_info
           }
+
+          request[:request_id] = @id_generator.newID if not request[:request_id]
+
+          # Log request allows for multiple requests but here we only send one.
           params[:request] = [request] if include_request
-          params[:insertion] = compact_metrics_insertions if include_insertions
+
+          if include_insertions
+            params[:insertion] = compact_metrics_insertions if include_insertions
+            add_missing_ids_on_insertions! request, params[:insertion]
+          end
           
           params.clean!
         end
@@ -124,7 +138,7 @@ module Promoted
             insertion_obj                = Hash[insertion_obj]
             insertion_obj[:user_info]    = user_info
             insertion_obj[:timing]       = timing
-            insertion_obj[:insertion_id] = SecureRandom.uuid # generate random UUID
+            insertion_obj[:insertion_id] = @id_generator.newID
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
             insertion_obj                = @to_compact_metrics_insertion_func.call(insertion_obj) if @to_compact_metrics_insertion_func
@@ -134,6 +148,14 @@ module Promoted
         end
 
         private
+
+        def add_missing_ids_on_insertions! request, insertions
+          insertions.each do |insertion|
+            insertion[:insertion_id] = @id_generator.newID if not insertion[:insertion_id]
+            insertion[:session_id] = request[:session_id] if request[:session_id]
+            insertion[:request_id] = request[:request_id] if request[:request_id]
+          end
+        end
 
         # A list of the response Insertions.  This client expects lists to be truncated
         # already to request.paging.size.  If not truncated, this client will truncate
@@ -146,6 +168,6 @@ module Promoted
   end
 end
 
-require 'securerandom'
 require "promoted/ruby/client/constants"
 require "promoted/ruby/client/extensions"
+require "promoted/ruby/client/id_generator"
