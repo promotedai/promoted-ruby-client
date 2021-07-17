@@ -120,6 +120,12 @@ module Promoted
           end
         end
 
+        def ensure_client_timestamp
+          if timing[:client_log_timestamp].nil?
+            timing[:client_log_timestamp] = Time.now.to_i
+          end
+        end
+
         # TODO: This looks overly complicated.
         def compact_metrics_insertions
           @insertion            = [] # insertion should be set according to the compact insertion

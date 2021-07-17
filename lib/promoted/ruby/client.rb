@@ -125,7 +125,7 @@ module Promoted
 
           perform_common_checks!(args) if @perform_checks
 
-          pre_delivery_fillin_fields delivery_request_builder
+          delivery_request_builder.ensure_client_timestamp
   
           response_insertions = []
           cohort_membership_to_log = nil
@@ -176,8 +176,6 @@ module Promoted
             log_request_builder.platform_id = delivery_request_builder.platform_id
             log_request_builder.timing      = delivery_request_builder.timing
             log_request_builder.user_info   = delivery_request_builder.user_info
-            pre_delivery_fillin_fields log_request_builder
-
 
             # On a successful delivery request, we don't log the insertions
             # or the request since they are logged on the server-side.
@@ -220,7 +218,7 @@ module Promoted
             end
           end
           
-          pre_delivery_fillin_fields log_request_builder
+          log_request_builder.ensure_client_timestamp
 
           if !shadow_traffic_err && should_send_as_shadow_traffic?
             deliver_shadow_traffic args, headers
@@ -321,14 +319,7 @@ module Promoted
             return true if !cohort_membership[:arm]
             return cohort_membership[:arm] != Promoted::Ruby::Client::COHORT_ARM['CONTROL']
           end
-        end
-        
-        # TODO: This probably just goes better in the RequestBuilder class.
-        def pre_delivery_fillin_fields(log_request_builder)
-          if log_request_builder.timing[:client_log_timestamp].nil?
-            log_request_builder.timing[:client_log_timestamp] = Time.now.to_i
-          end
-        end
+        end        
       end
     end
   end

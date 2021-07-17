@@ -32,6 +32,32 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
     end
   end
 
+  context "delivery_request_params" do
+    it "should return expected delivery request" do
+      request_builder = subject.class.new({:id_generator => FakeIdGenerator.new })
+      request_builder.set_request_params(input)
+      output = request_builder.delivery_request_params
+
+      expect(output.key?(:user_info)).to be true
+      expect(output[:insertion].length).to be > 0
+      expect(output[:insertion].length).to eq input[:full_insertion].length
+
+      # Delivery request should not fill in insertion ids.
+      output[:insertion].each {|insertion|
+        expect(insertion.key?(:request_id)).to be false
+        expect(insertion.key?(:insertion_id)).to be false
+      }
+
+      # Should have a timestamp
+      expect(output.key?(:timing)).to be true
+      expect(output[:timing].key?(:client_log_timestamp)).to be true
+      expect(output[:timing][:client_log_timestamp]).to be_instance_of(Integer)
+
+      # Delivery requests don't include the original request field.
+      expect(output.key?(:request)).to be false
+    end
+  end
+
   context "log_request_params" do
     it "should return expected logging object" do
       request_builder = subject.class.new({:id_generator => FakeIdGenerator.new })
