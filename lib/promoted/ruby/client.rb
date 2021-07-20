@@ -297,8 +297,12 @@ module Promoted
           delivery_request_params = delivery_request_builder.delivery_request_params(should_compact: false)
           delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
 
-          # Call Delivery API async (fire and forget)
-          send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers, true)
+          # Call Delivery API and log/ignore errors.
+          begin
+            send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers, true)
+          rescue StandardError => err
+            @logger.warn("Shadow traffic call failed with #{err}") if @logger
+          end
         end
 
         def perform_common_checks!(req)
