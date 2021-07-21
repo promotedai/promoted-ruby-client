@@ -41,6 +41,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
       expect(output.key?(:user_info)).to be true
       expect(output[:insertion].length).to be > 0
       expect(output[:insertion].length).to eq input[:full_insertion].length
+      expect(output[:client_request_id]).to eq "10"
 
       # Delivery request should not fill in insertion ids.
       output[:insertion].each {|insertion|
@@ -85,6 +86,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                     },
                     request_id: "10"
                   }],
+                  client_request_id: "10",
                   insertion:
                   [{
                     content_id: "5b4a6512326bd9777abfabc34",

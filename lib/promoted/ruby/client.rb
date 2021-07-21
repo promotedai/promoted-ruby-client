@@ -168,7 +168,8 @@ module Promoted
             log_request = {
               :full_insertion => response_insertions,
               :experiment => cohort_membership_to_log,
-              :request => request_to_log
+              :request => request_to_log,
+              :client_request_id => delivery_request_builder.client_request_id
             }
             log_request_builder.set_request_params(log_request)
 
