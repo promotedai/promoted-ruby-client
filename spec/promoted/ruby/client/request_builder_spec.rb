@@ -84,9 +84,9 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                         :query=>{}
                       }
                     },
-                    request_id: "10"
+                    request_id: "10",
+                    client_request_id: "10"
                   }],
-                  client_request_id: "10",
                   insertion:
                   [{
                     content_id: "5b4a6512326bd9777abfabc34",

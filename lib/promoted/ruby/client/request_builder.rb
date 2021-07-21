@@ -2,7 +2,7 @@ module Promoted
   module Ruby
     module Client
       class RequestBuilder
-        attr_reader   :session_id, :only_log, :experiment, :client_info, :client_request_id,
+        attr_reader   :session_id, :only_log, :experiment, :client_info,
                       :view_id, :insertion, :to_compact_delivery_insertion_func,
                       :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion_func
 
@@ -32,10 +32,8 @@ module Promoted
           @to_compact_metrics_insertion_func       = args[:to_compact_metrics_insertion_func]
           @to_compact_delivery_insertion_func      = args[:to_compact_delivery_insertion_func]
 
-          # First case: Client set a client request id on the original request.
-          # Second case: Copying in a client request id from a different request.
-          # Third case: Nobody has created a client request id yet, so we will.
-          @client_request_id       = request[:client_request_id] || args[:client_request_id] || @id_generator.newID
+          # If the user didn't create a client request id, we do it for them.
+          request[:client_request_id] = request[:client_request_id] || @id_generator.newID
         end
 
         # Only used in delivery
@@ -66,7 +64,7 @@ module Promoted
             search_query: request[:search_query],
             properties: request[:properties],
             paging: request[:paging],
-            client_request_id: @client_request_id
+            client_request_id: request[:client_request_id]
           }
           params[:insertion] = should_compact ? compact_delivery_insertions : full_insertion
 
@@ -102,14 +100,14 @@ module Promoted
             user_info: user_info,
             timing: timing,
             cohort_membership: @experiment,
-            client_info: @client_info,
-            client_request_id: request[:client_request_id] || @client_request_id # if logging a request, match the client request id, else use the one we generated
+            client_info: @client_info
           }
 
-          request[:request_id] = @id_generator.newID if not request[:request_id]
-
           # Log request allows for multiple requests but here we only send one.
-          params[:request] = [request] if include_request
+          if include_request
+            request[:request_id] = request[:request_id] || @id_generator.newID
+            params[:request] = [request]
+          end
 
           if include_insertions
             params[:insertion] = compact_metrics_insertions if include_insertions

@@ -422,7 +422,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(log_request).not_to be nil
 
       # Log request that follows up an unsent delivery request should have the same client request id.
-      expect(log_request[:client_request_id]).to eq(delivery_req[:client_request_id])
+      expect(log_request[:request][0][:client_request_id]).to eq(delivery_req[:client_request_id])
     end
     
     it "can custom compact insertions" do
@@ -528,7 +528,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       # Since we did not deliver, log request should have ids set
       logging_json = deliver_resp[:log_request]
       expect(logging_json[:request].length).to eq 1
-      expect(logging_json[:client_request_id]).not_to be nil
+      expect(logging_json[:request][0][:client_request_id]).not_to be nil
       expect(logging_json[:request][0][:request_id]).not_to be nil
       logging_json[:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
@@ -560,7 +560,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       # Since we did not deliver, log request should have ids set
       logging_json = deliver_resp[:log_request]
       expect(logging_json[:request].length).to eq 1
-      expect(logging_json[:client_request_id]).not_to be nil
+      expect(logging_json[:request][0][:client_request_id]).not_to be nil
       expect(logging_json[:request][0][:request_id]).not_to be nil
       logging_json[:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
@@ -581,8 +581,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp).not_to be nil
 
       # Since we are logging for the cohort membership, should set sync'd client request id.
-      expect(deliver_resp[:log_request][:client_request_id]).not_to be nil
-      expect(deliver_resp[:log_request][:client_request_id]).to eq delivery_req[:client_request_id]
       expect(deliver_resp[:log_request].key?(:insertion)).to be false
       expect(deliver_resp[:log_request].key?(:request)).to be false
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
@@ -609,9 +607,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       })
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
-      # Since we are logging for the cohort membership, should set sync'd client request id.
-      expect(deliver_resp[:log_request][:client_request_id]).not_to be nil
-      expect(deliver_resp[:log_request][:client_request_id]).to eq delivery_req[:client_request_id]      
       expect(deliver_resp[:log_request].key?(:insertion)).to be false
       expect(deliver_resp[:log_request].key?(:request)).to be false
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
