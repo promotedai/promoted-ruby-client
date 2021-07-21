@@ -193,6 +193,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
     it "works in a normal case" do
       client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
+      expect(client.async_shadow_traffic).to be true
 
       delivery_req = nil
       expect(client).to receive(:send_request) {|value|
@@ -214,6 +215,36 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # Requests sent to delivery do not have request ids set.
       expect(delivery_req.key?(:request_id)).to be false
+    end
+        
+    it "sends synchronous shadow traffic" do
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :async_shadow_traffic => false }))
+      expect(client.async_shadow_traffic).to be false
+
+      delivery_req = nil
+      expect(client).to receive(:send_request) {|value|
+        delivery_req = value
+      }
+      # no client.close call, which would wait on the thread pool -- the thread pool should not be created in this test case.
+
+      logging_json = nil
+      expect { logging_json = client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
+      expect(logging_json).not_to be nil
+
+      expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
+    end
+        
+    it "does not raise on error in synchronous shadow traffic" do
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :async_shadow_traffic => false }))
+      expect(client.async_shadow_traffic).to be false
+
+      expect(client).to receive(:send_request).and_raise(StandardError)
+
+      # no client.close call, which would wait on the thread pool -- the thread pool should not be created in this test case.
+
+      logging_json = nil
+      expect { logging_json = client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
+      expect(logging_json).not_to be nil
     end
         
     it "passes the endpoint, timeout, and api key" do
