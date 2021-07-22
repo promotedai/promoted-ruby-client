@@ -61,6 +61,7 @@ module Promoted
           raise ArgumentError.new("Invalid shadow_traffic_delivery_percent, must be between 0 and 1") if @shadow_traffic_delivery_percent < 0 || @shadow_traffic_delivery_percent > 1.0
 
           @sampler = Sampler.new
+          @pager   = Pager.new
 
           # HTTP Client creation
           @delivery_endpoint = params[:delivery_endpoint] || DEFAULT_DELIVERY_ENDPOINT
@@ -115,7 +116,7 @@ module Promoted
           # Respect the enabled state
           if !@enabled
             return {
-              insertion: apply_paging(args[:full_insertion], args[:request][:paging])
+              insertion: @pager.apply_paging(args[:full_insertion], Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], args[:request][:paging])
               # No log request returned when disabled
             }
           end
@@ -133,6 +134,13 @@ module Promoted
 
           only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
           deliver_err = false
+
+          if !@pager.validate_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
+            # Invalid input, log and do SDK-side delivery.
+            @logger.warn("Invalid paging parameters") if @logger
+            only_log = true
+          end
+
           if !only_log
             cohort_membership_to_log = delivery_request_builder.new_cohort_membership_to_log
 
@@ -158,7 +166,7 @@ module Promoted
           request_to_log = nil
           if !insertions_from_delivery then
             request_to_log = delivery_request_builder.request
-            response_insertions = apply_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
+            response_insertions = @pager.apply_paging(delivery_request_builder.full_insertion, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], delivery_request_builder.request[:paging])
           end
 
           log_req = nil
@@ -239,14 +247,6 @@ module Promoted
         end
 
         private
-
-        def apply_paging full_insertion, paging
-          size = nil
-          if paging
-            size = paging[:size]
-          end
-          return size != nil ? full_insertion[0..size - 1] : full_insertion
-        end
 
         def send_request payload, endpoint, timeout_millis, api_key, headers={}, send_async=false
           resp = nil
@@ -331,6 +331,7 @@ end
 
 # dependent /libs
 require "promoted/ruby/client/request_builder"
+require "promoted/ruby/client/pager"
 require "promoted/ruby/client/sampler"
 require "promoted/ruby/client/util"
 require "promoted/ruby/client/validator"
