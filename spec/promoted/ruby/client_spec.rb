@@ -438,12 +438,22 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
     it "swallows errors and defaults the insertions" do
       client = described_class.new
-      expect(client).to receive(:send_request).and_raise(StandardError)
+
+      delivery_req = nil
+      allow(client).to receive(:send_request) { |value|
+        delivery_req = value
+        raise StandardError
+      }
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
       expect(deliver_resp[:insertion].length()).to eq(@input[:fullInsertion].length())
-      expect(deliver_resp[:log_request]).not_to be nil
+
+      log_request = deliver_resp[:log_request]
+      expect(log_request).not_to be nil
+
+      # Log request that follows up an unsent delivery request should have the same client request id.
+      expect(log_request[:request][0][:client_request_id]).to eq(delivery_req[:client_request_id])
     end
     
     it "can custom compact insertions" do
@@ -549,6 +559,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       # Since we did not deliver, log request should have ids set
       logging_json = deliver_resp[:log_request]
       expect(logging_json[:request].length).to eq 1
+      expect(logging_json[:request][0][:client_request_id]).not_to be nil
       expect(logging_json[:request][0][:request_id]).not_to be nil
       logging_json[:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
@@ -580,6 +591,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       # Since we did not deliver, log request should have ids set
       logging_json = deliver_resp[:log_request]
       expect(logging_json[:request].length).to eq 1
+      expect(logging_json[:request][0][:client_request_id]).not_to be nil
       expect(logging_json[:request][0][:request_id]).not_to be nil
       logging_json[:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
@@ -590,11 +602,16 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       full_insertion = @input[:fullInsertion]
       client = described_class.new
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
-      expect(client).to receive(:send_request).and_return({
+      delivery_req = nil
+      expect(client).to receive(:send_request) {|value|
+        delivery_req = value
+      }.and_return({
         :insertion => full_insertion
       })
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
+
+      # Since we are logging for the cohort membership, should set sync'd client request id.
       expect(deliver_resp[:log_request].key?(:insertion)).to be false
       expect(deliver_resp[:log_request].key?(:request)).to be false
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
@@ -613,7 +630,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       client = described_class.new({ :should_apply_treatment_func => should_apply_func })
 
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
-      expect(client).to receive(:send_request).and_return({
+      delivery_req = nil
+      expect(client).to receive(:send_request) {|value|
+        delivery_req = value
+      }.and_return({
         :insertion => full_insertion
       })
       deliver_resp = client.deliver @input

@@ -31,6 +31,9 @@ module Promoted
           @timing                  = request[:timing] || { :client_log_timestamp => Time.now.to_i }
           @to_compact_metrics_insertion_func       = args[:to_compact_metrics_insertion_func]
           @to_compact_delivery_insertion_func      = args[:to_compact_delivery_insertion_func]
+
+          # If the user didn't create a client request id, we do it for them.
+          request[:client_request_id] = request[:client_request_id] || @id_generator.newID
         end
 
         # Only used in delivery
@@ -60,7 +63,8 @@ module Promoted
             use_case: @use_case,
             search_query: request[:search_query],
             properties: request[:properties],
-            paging: request[:paging]
+            paging: request[:paging],
+            client_request_id: request[:client_request_id]
           }
           params[:insertion] = should_compact ? compact_delivery_insertions : full_insertion
 
@@ -99,10 +103,11 @@ module Promoted
             client_info: @client_info
           }
 
-          request[:request_id] = @id_generator.newID if not request[:request_id]
-
           # Log request allows for multiple requests but here we only send one.
-          params[:request] = [request] if include_request
+          if include_request
+            request[:request_id] = request[:request_id] || @id_generator.newID
+            params[:request] = [request]
+          end
 
           if include_insertions
             params[:insertion] = compact_metrics_insertions if include_insertions
