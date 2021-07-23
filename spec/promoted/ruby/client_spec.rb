@@ -518,6 +518,17 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(resp[:log_request]).to be nil
     end
 
+    it "does not deliver but logs with invalid paging parameters" do
+      dup_input = Marshal.load(Marshal.dump(@input))
+      dup_input[:request][:paging] = { size: 1, offset: 100000 }
+
+      client = described_class.new
+      resp = client.deliver dup_input
+      expect(client).not_to receive(:send_request)
+      expect(resp[:insertion].length).to be 0
+      expect(resp[:log_request]).not_to be nil
+    end
+
     it "does not deliver when disabled, with paging" do
       dup_input = Marshal.load(Marshal.dump(@input))
       dup_input[:request][:paging] = { size: 1, offset: 0 }
