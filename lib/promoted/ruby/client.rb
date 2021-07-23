@@ -109,7 +109,7 @@ module Promoted
         end
 
         ##
-        # Make a delivery request.
+        # Make a delivery request. If @perform_checks is set, input validation will occur and possibly raise errors.
         def deliver args, headers={}
           args = Promoted::Ruby::Client::Util.translate_args(args)
 
@@ -124,7 +124,16 @@ module Promoted
           delivery_request_builder = RequestBuilder.new
           delivery_request_builder.set_request_params(args)
 
-          perform_common_checks!(args) if @perform_checks
+          # perform_checks raises errors.
+          if @perform_checks
+            perform_common_checks!(args)
+
+            if args[:insertion_page_type] == Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED'] then
+              err = DeliveryInsertionPageType.new
+              @logger.error(err) if @logger
+              raise err
+            end
+          end
 
           delivery_request_builder.ensure_client_timestamp
   
@@ -138,7 +147,10 @@ module Promoted
           if !@pager.validate_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
             # Invalid input, log and do SDK-side delivery.
             @logger.warn("Invalid paging parameters") if @logger
-            only_log = true
+            return {
+              insertion: []
+              # No log request returned when no response insertions due to invalid paging
+            }
           end
 
           if !only_log

@@ -336,12 +336,43 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       @input = Marshal.load(Marshal.dump(SAMPLE_INPUT_CAMEL))
     end
 
-    context "validation on prepare" do
+    context "validation on deliver" do
       it "passes the request through the validator when perform checks" do
         dup_input = Marshal.load(Marshal.dump(@input))
         dup_input.delete :request
         client = described_class.new
+        expect(client.perform_checks).to be true
         expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
+      end
+  
+      it "enforces unpaged insertions when perform checks" do
+        dup_input = Marshal.load(Marshal.dump(@input))
+        dup_input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
+        client = described_class.new
+        expect(client.perform_checks).to be true
+        expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::DeliveryInsertionPageType, /unpaged/)
+      end
+  
+      it "assumes unpaged insertions" do
+        dup_input = Marshal.load(Marshal.dump(@input))
+        client = described_class.new
+        expect(client.perform_checks).to be true
+        expect { client.deliver(dup_input) }.not_to raise_error
+      end
+  
+      it "allows explicit unpaged insertions" do
+        dup_input = Marshal.load(Marshal.dump(@input))
+        dup_input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
+        client = described_class.new
+        expect(client.perform_checks).to be true
+        expect { client.deliver(dup_input) }.not_to raise_error
+      end
+  
+      it "does not enforce unpaged insertions when no perform checks" do
+        dup_input = Marshal.load(Marshal.dump(@input))
+        dup_input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
+        client = described_class.new({ :perform_checks => false })
+        expect { client.deliver(dup_input) }.not_to raise_error
       end
   
       it "does not pass the request through the validator when no perform checks" do
@@ -518,7 +549,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(resp[:log_request]).to be nil
     end
 
-    it "does not deliver but logs with invalid paging parameters" do
+    it "does not deliver with invalid paging parameters" do
       dup_input = Marshal.load(Marshal.dump(@input))
       dup_input[:request][:paging] = { size: 1, offset: 100000 }
 
@@ -526,7 +557,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       resp = client.deliver dup_input
       expect(client).not_to receive(:send_request)
       expect(resp[:insertion].length).to be 0
-      expect(resp[:log_request]).not_to be nil
+      expect(resp[:log_request]).to be nil
     end
 
     it "does not deliver when disabled, with paging" do

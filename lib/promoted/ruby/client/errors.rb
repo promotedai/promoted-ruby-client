@@ -7,6 +7,12 @@ module Promoted
         end
       end
 
+      class DeliveryInsertionPageType < StandardError
+        def message
+          'Delivery insertions must be unpaged'
+        end
+      end
+
       class EndpointError < StandardError
         attr_reader :cause
         def initialize(cause)
