@@ -262,23 +262,29 @@ module Promoted
 
           if send_async && @pool
             @pool.post do
-              start_time = Time.now.to_i
+              start_time = Time.now
               begin
                 resp = @http_client.send(endpoint, timeout_millis, payload, use_headers)
               rescue Faraday::Error => err
-                @logger.warn("Deliver call failed with #{err}") if @logger
+                @logger.warn("Async send_request failed with #{err}") if @logger
                 return
               end
-              ellapsed_time = Time.now.to_i - start_time
-              @logger.info("Deliver call completed in #{ellapsed_time} ms") if @logger
+
+              ellapsed_time = Time.now - start_time
+              @logger.debug("Async send_request completed in #{ellapsed_time.to_f * 1000} ms") if @logger
             end
           else
+            start_time = Time.now
             begin
               resp = @http_client.send(endpoint, timeout_millis, payload, use_headers)
             rescue Faraday::Error => err
+              @logger.warn("Sync send_request failed with #{err}") if @logger
               raise EndpointError.new(err)
             end
-          end
+
+            ellapsed_time = Time.now - start_time
+            @logger.debug("Sync send_request completed in #{ellapsed_time.to_f * 1000} ms") if @logger
+        end
 
           return resp
         end
@@ -298,10 +304,17 @@ module Promoted
           delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
 
           # Call Delivery API and log/ignore errors.
+          start_time = Time.now
           begin
-            send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers, true)
+            send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers, @async_shadow_traffic)
           rescue StandardError => err
             @logger.warn("Shadow traffic call failed with #{err}") if @logger
+            return
+          end
+          
+          if !@async_shadow_traffic
+            ellapsed_time = Time.now - start_time
+            @logger.info("Shadow traffic call completed in #{ellapsed_time.to_f * 1000} ms") if @logger
           end
         end
 

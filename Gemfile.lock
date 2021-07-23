@@ -10,6 +10,7 @@ GEM
     backport (1.2.0)
     benchmark (0.1.1)
     concurrent-ruby (1.1.9)
+    connection_pool (2.2.5)
     debase (0.2.5.beta2)
       debase-ruby_core_source (>= 0.10.12)
     debase-ruby_core_source (0.10.12)
@@ -38,6 +39,8 @@ GEM
       kramdown (~> 2.0)
     mini_portile2 (2.5.3)
     multipart-post (2.1.1)
+    net-http-persistent (4.0.1)
+      connection_pool (~> 2.2)
     nokogiri (1.11.7)
       mini_portile2 (~> 2.5.0)
       racc (~> 1.4)
@@ -116,6 +119,7 @@ DEPENDENCIES
   faraday-net_http
   faraday_middleware
   jaro_winkler
+  net-http-persistent
   promoted-ruby-client!
   rake (~> 10.0)
   rspec (~> 3.0)
