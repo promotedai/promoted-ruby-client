@@ -11,7 +11,7 @@ module Promoted
                     f.request :json
                     f.request :retry, max: 3
                     f.use Faraday::Response::RaiseError # raises on 4xx and 5xx responses
-                    f.adapter :net_http
+                    f.adapter :net_http_persistent
                 end
             end
 

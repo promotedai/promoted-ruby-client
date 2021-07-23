@@ -8,6 +8,7 @@ gemspec
 gem 'faraday', '~> 1.4.1'
 gem 'faraday_middleware'
 gem 'faraday-net_http'
+gem 'net-http-persistent'
 gem 'concurrent-ruby', require: 'concurrent'
 
 group :development do
