@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    promoted-ruby-client (0.1.12)
+    promoted-ruby-client (0.1.13)
       concurrent-ruby (~> 1)
       faraday (~> 1.4, >= 1.4.3)
       faraday-net_http (~> 1.0)
