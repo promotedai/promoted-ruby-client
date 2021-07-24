@@ -3,9 +3,8 @@ PATH
   specs:
     promoted-ruby-client (0.1.13)
       concurrent-ruby (~> 1)
-      faraday (~> 1.4, >= 1.4.3)
-      faraday-net_http (~> 1.0)
-      faraday_middleware (~> 1.0, >= 1.0.0)
+      faraday (>= 0.9.0)
+      faraday_middleware (>= 0.9.0)
       net-http-persistent (~> 4.0)
 
 GEM

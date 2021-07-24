@@ -39,7 +39,6 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency 'faraday', '>= 0.9.0'
   spec.add_runtime_dependency 'faraday_middleware', '>= 0.9.0'
-  spec.add_runtime_dependency 'faraday-net_http', '>= 0.9.0'
   spec.add_runtime_dependency 'net-http-persistent', '~> 4.0'
   spec.add_runtime_dependency 'concurrent-ruby', '~> 1'
 
