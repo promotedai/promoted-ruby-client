@@ -1,12 +1,12 @@
 PATH
   remote: .
   specs:
-    promoted-ruby-client (0.1.10)
+    promoted-ruby-client (0.1.11)
       concurrent-ruby (~> 1.1, >= 1.1.9)
       faraday (~> 1.4, >= 1.4.3)
       faraday-net_http (~> 1.0)
       faraday_middleware (~> 1.0, >= 1.0.0)
-      net-http-persistent (~> 4.0)
+      net-http-persistent
 
 GEM
   remote: https://rubygems.org/
