@@ -37,9 +37,9 @@ Gem::Specification.new do |spec|
   spec.executables      = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths    = ["lib"]
 
-  spec.add_runtime_dependency 'faraday', '~> 1.4', '>= 1.4.3'
-  spec.add_runtime_dependency 'faraday_middleware', '~> 1.0', '>= 1.0.0'
-  spec.add_runtime_dependency 'faraday-net_http', '~> 1.0'
+  spec.add_runtime_dependency 'faraday', '>= 0.9.0'
+  spec.add_runtime_dependency 'faraday_middleware', '>= 0.9.0'
+  spec.add_runtime_dependency 'faraday-net_http', '>= 0.9.0'
   spec.add_runtime_dependency 'net-http-persistent', '~> 4.0'
   spec.add_runtime_dependency 'concurrent-ruby', '~> 1'
 
