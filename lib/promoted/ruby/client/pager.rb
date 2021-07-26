@@ -1,18 +1,28 @@
 module Promoted
     module Ruby
       module Client
+        class InvalidPagingError < StandardError
+          attr_reader :default_insertions_page
+
+          def initialize(message, default_insertions_page)
+            super(message)
+            @default_insertions_page = default_insertions_page
+          end
+        end
+        
         class Pager
             def validate_paging (insertions, paging)
-              if paging && paging[:offset]
-                return paging[:offset] < insertions.length
+              if paging && paging[:offset] && paging[:offset] >= insertions.length
+                raise InvalidPagingError.new("Invalid page offset (insertion size #{insertions.length}, offset #{paging[:offset]})", [])
               end
-              return true          
             end
 
             def apply_paging (insertions, insertion_page_type, paging = nil)
-              # This is invalid input, stop it before it goes to the server.
-              if !validate_paging(insertions, paging)
-                return []
+              begin
+                validate_paging(insertions, paging)
+              rescue InvalidPagingError => err
+                # This is invalid input, stop it before it goes to the server.
+                return err.default_insertions_page
               end
 
               if !paging
