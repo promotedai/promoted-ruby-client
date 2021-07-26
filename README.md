@@ -17,6 +17,8 @@ More information at [http://www.promoted.ai](http://www.promoted.ai)
 
 ### [Faraday](https://github.com/lostisland/faraday)
 HTTP client for calling Promoted.
+### [Net::HTTP::Persistent](https://github.com/drbrain/net-http-persistent)
+Faraday binding (provides connection pool support)
 ### [Concurrent Ruby](https://github.com/ruby-concurrency/concurrent-ruby)
 Provides a thread pool for making shadow traffic requests to Delivery API in the background on a subset of calls to ```prepare_for_logging```
 ## Creating a Client
@@ -50,6 +52,7 @@ Name | Type | Description
 ```:default_request_headers``` | Hash | Additional headers to send on the request beyond ```x-api-key```. Defaults to {}
 ```:default_only_log``` | Boolean | If true, the ```deliver``` method will not direct traffic to Delivery API but rather return a request suitable for logging. Defaults to false.
 ```:should_apply_treatment_func``` | Proc | Called during delivery, accepts an experiment and returns a Boolean indicating whether the request should be considered part of the control group (false) or in the experiment (true). If nil, the default behavior of checking the experiement ```:arm``` is applied.
+```:warmup``` | Boolean | If true, the client will prime the `Net::HTTP::Persistent` connection pool on construction; this can make the first few calls to Promoted complete faster. Defaults to false.
 
 ## Data Types
 

@@ -6,10 +6,13 @@ module Promoted
       module Client
         class FaradayHTTPClient
  
-            def initialize
+            def initialize(logger = nil)
                 @conn = Faraday.new do |f|
                     f.request :json
                     f.request :retry, max: 3
+                    if logger
+                      f.response :logger, logger, { headers: false, bodies: true, log_level: :debug }
+                    end
                     f.use Faraday::Response::RaiseError # raises on 4xx and 5xx responses
                     f.adapter :net_http_persistent
                 end
@@ -29,6 +32,10 @@ module Promoted
                   else
                     response.body
                   end
+            end
+
+            def get(endpoint)
+              @conn.get(endpoint).body
             end
         end
       end
