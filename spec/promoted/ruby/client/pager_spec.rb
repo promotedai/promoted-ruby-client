@@ -21,6 +21,40 @@ RSpec.describe Promoted::Ruby::Client::Pager do
     ]
   end
 
+  context "validate paging" do
+    it "takes a valid set of paging" do
+      paging = {
+        :size => 2,
+        :offset => 1
+      }
+
+      pager = subject.class.new
+      expect { pager.validate_paging(@insertions, paging) }.not_to raise_error
+    end
+
+    it "raises on out of range offset" do
+      paging = {
+        :size => 2,
+        :offset => 999
+      }
+
+      found_err = nil
+      pager = subject.class.new
+      begin
+        pager.validate_paging(@insertions, paging)
+      rescue StandardError => err
+        found_err = err
+      end
+
+      expect(found_err).not_to be nil
+      expect(found_err).to be_a Promoted::Ruby::Client::InvalidPagingError
+      expect(found_err.default_insertions_page).not_to be nil
+      expect(found_err.default_insertions_page.length).to eq 0
+      expect(found_err.message).to match(/Invalid page offset/)
+      expect(found_err.message).to match(/999/)
+    end
+  end
+
   context "apply paging" do
     it "pages a window when unpaged" do
         paging = {

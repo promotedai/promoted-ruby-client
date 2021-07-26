@@ -144,11 +144,13 @@ module Promoted
           only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
           deliver_err = false
 
-          if !@pager.validate_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
+          begin
+            @pager.validate_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
+          rescue InvalidPagingError => err
             # Invalid input, log and do SDK-side delivery.
-            @logger.warn("Invalid paging parameters") if @logger
+            @logger.warn(err) if @logger
             return {
-              insertion: []
+              insertion: err.default_insertions_page
               # No log request returned when no response insertions due to invalid paging
             }
           end
