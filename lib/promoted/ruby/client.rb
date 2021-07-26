@@ -73,7 +73,7 @@ module Promoted
           @delivery_timeout_millis = params[:delivery_timeout_millis] || DEFAULT_DELIVERY_TIMEOUT_MILLIS
           @metrics_timeout_millis  = params[:metrics_timeout_millis] || DEFAULT_METRICS_TIMEOUT_MILLIS
 
-          @http_client = FaradayHTTPClient.new
+          @http_client = FaradayHTTPClient.new(@logger)
           @validator = Promoted::Ruby::Client::Validator.new
 
           @async_shadow_traffic = true
@@ -96,6 +96,10 @@ module Promoted
           @enabled = true
           if params[:enabled] != nil
             @enabled = params[:enabled] || false
+          end
+
+          if params[:warmup]
+            do_warmup
           end
         end
         
@@ -261,6 +265,22 @@ module Promoted
         end
 
         private
+
+        def do_warmup
+          if !@delivery_endpoint
+            # Warmup only supported when delivery is enabled.
+            return
+          end
+
+          warmup_url = @delivery_endpoint.reverse.sub("/deliver".reverse, "/healthz".reverse).reverse
+          @logger.info("Warming up at #{warmup_url}") if @logger
+          1.upto(20) do
+            resp = @http_client.get(warmup_url)
+            if resp != "ok"
+              @logger.warn("Got a failure warming up") if @logger
+            end
+          end
+        end
 
         def send_request payload, endpoint, timeout_millis, api_key, headers={}, send_async=false
           resp = nil
