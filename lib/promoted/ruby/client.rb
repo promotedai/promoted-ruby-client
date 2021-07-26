@@ -319,8 +319,9 @@ module Promoted
 
           # Call Delivery API and log/ignore errors.
           start_time = Time.now
+          response = nil
           begin
-            send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers, @async_shadow_traffic)
+            response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers, @async_shadow_traffic)
           rescue StandardError => err
             @logger.warn("Shadow traffic call failed with #{err}") if @logger
             return
@@ -328,7 +329,8 @@ module Promoted
           
           if !@async_shadow_traffic
             ellapsed_time = Time.now - start_time
-            @logger.info("Shadow traffic call completed in #{ellapsed_time.to_f * 1000} ms") if @logger
+            insertions = response ? response[:insertion] : []
+            @logger.info("Shadow traffic call completed in #{ellapsed_time.to_f * 1000} ms with #{insertions.length} insertions") if @logger
           end
         end
 
