@@ -277,7 +277,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
   context "copy and remove properties compact func" do
     let!(:input_with_prop) do
       input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop[:to_compact_metrics_insertion_func] = described_class.copy_and_remove_properties
+      input_with_prop[:to_compact_metrics_properties_func] = described_class.remove_all_properties
       input_with_prop
     end
 
@@ -488,7 +488,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
     
     it "can custom compact insertions" do
-      @input[:to_compact_delivery_insertion_func] = described_class.copy_and_remove_properties
+      @input[:to_compact_delivery_properties_func] = described_class.remove_all_properties
 
       client = described_class.new
       full_insertion = @input[:fullInsertion]
@@ -692,18 +692,18 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
   end
 
   context "prepare_for_logging when user defined method is passed" do
-    let!(:to_compact_metrics_insertion_func) do
-      Proc.new do |insertion|
-        insertion[:properties].delete(:invites_required)
-        insertion[:properties].delete(:should_discount_addons)
-        insertion[:properties].delete(:total_uses)
-        insertion[:properties].delete(:is_archived)
-        insertion
+    let!(:to_compact_metrics_properties_func) do
+      Proc.new do |properties|
+        properties[:struct].delete(:invites_required)
+        properties[:struct].delete(:should_discount_addons)
+        properties[:struct].delete(:total_uses)
+        properties[:struct].delete(:is_archived)
+        properties
       end
     end
     let!(:input_with_prop) do
       input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop[:to_compact_metrics_insertion_func] = to_compact_metrics_insertion_func
+      input_with_prop[:to_compact_metrics_properties_func] = to_compact_metrics_properties_func
       input_with_prop
     end
 
@@ -711,10 +711,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input_with_prop)
       logging_json[:insertion].each do |insertion|
-        expect(insertion[:properties].key?(:invites_required)).to be false
-        expect(insertion[:properties].key?(:should_discount_addons)).to be false
-        expect(insertion[:properties].key?(:total_uses)).to be false
-        expect(insertion[:properties].key?(:is_archived)).to be false
+        expect(insertion[:properties][:struct].key?(:invites_required)).to be false
+        expect(insertion[:properties][:struct].key?(:should_discount_addons)).to be false
+        expect(insertion[:properties][:struct].key?(:total_uses)).to be false
+        expect(insertion[:properties][:struct].key?(:is_archived)).to be false
       end
     end
 
@@ -723,11 +723,11 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       logging_json = client.prepare_for_logging(input_with_prop)
       logging_json[:insertion].each do |insertion|
         # some_property_1 is nil so it gets stripped from the compacted insertions.
-        expect(insertion[:properties].key?(:some_property_1)).to be false
+        expect(insertion[:properties][:struct].key?(:some_property_1)).to be false
 
-        expect(insertion[:properties].key?(:some_property_2)).to be true
-        expect(insertion[:properties].key?(:last_used_at)).to be true
-        expect(insertion[:properties].key?(:last_purchase_at)).to be true
+        expect(insertion[:properties][:struct].key?(:some_property_2)).to be true
+        expect(insertion[:properties][:struct].key?(:last_used_at)).to be true
+        expect(insertion[:properties][:struct].key?(:last_purchase_at)).to be true
       end
     end
   end

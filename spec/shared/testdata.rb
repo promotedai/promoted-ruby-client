@@ -46,71 +46,81 @@ SAMPLE_INPUT_WITH_PROP =  {
     {
       content_id: "5b4a6512326bd9777abfabc34",
       properties: {
-        invites_required: 0,
-        should_discount_addons: false,
-        total_uses: 738,
-        is_archived: false,
-        non_combinable: false,
-        last_used_at: "2021-05-24T22:35:31.149Z",
-        last_purchase_at: "2021-05-24T22:35:31.214Z",
-        some_property_1: nil,
-        some_property_2: "some value..."
+        struct: {
+          invites_required: 0,
+          should_discount_addons: false,
+          total_uses: 738,
+          is_archived: false,
+          non_combinable: false,
+          last_used_at: "2021-05-24T22:35:31.149Z",
+          last_purchase_at: "2021-05-24T22:35:31.214Z",
+          some_property_1: nil,
+          some_property_2: "some value..."
+        }
       }
     },
     {
       content_id: "5b4a6512326bd9777abfabcf",
       properties: {
-        invites_required: 0,
-        should_discount_addons: false,
-        total_uses: 738,
-        is_archived: false,
-        non_combinable: false,
-        last_used_at: "2021-05-24T22:35:31.149Z",
-        last_purchase_at: "2021-05-24T22:35:31.214Z",
-        some_property_1: nil,
-        some_property_2: "some value..."
+        struct: {
+          invites_required: 0,
+          should_discount_addons: false,
+          total_uses: 738,
+          is_archived: false,
+          non_combinable: false,
+          last_used_at: "2021-05-24T22:35:31.149Z",
+          last_purchase_at: "2021-05-24T22:35:31.214Z",
+          some_property_1: nil,
+          some_property_2: "some value..."
+        }
       }
     },
     {
       content_id: "5b4a6512326bd9777abfabcf",
       properties: {
-        invites_required: 0,
-        should_discount_addons: false,
-        total_uses: 738,
-        is_archived: false,
-        non_combinable: false,
-        last_used_at: "2021-05-24T22:35:31.149Z",
-        last_purchase_at: "2021-05-24T22:35:31.214Z",
-        some_property_1: nil,
-        some_property_2: "some value..."
+        struct: {
+          invites_required: 0,
+          should_discount_addons: false,
+          total_uses: 738,
+          is_archived: false,
+          non_combinable: false,
+          last_used_at: "2021-05-24T22:35:31.149Z",
+          last_purchase_at: "2021-05-24T22:35:31.214Z",
+          some_property_1: nil,
+          some_property_2: "some value..."
+        }
       }
     },
     {
       content_id: "5b4a6512326bd9777abfabcf",
       properties: {
-        invites_required: 0,
-        should_discount_addons: false,
-        total_uses: 738,
-        is_archived: false,
-        non_combinable: false,
-        last_used_at: "2021-05-24T22:35:31.149Z",
-        last_purchase_at: "2021-05-24T22:35:31.214Z",
-        some_property_1: nil,
-        some_property_2: "some value..."
+        struct: {
+          invites_required: 0,
+          should_discount_addons: false,
+          total_uses: 738,
+          is_archived: false,
+          non_combinable: false,
+          last_used_at: "2021-05-24T22:35:31.149Z",
+          last_purchase_at: "2021-05-24T22:35:31.214Z",
+          some_property_1: nil,
+          some_property_2: "some value..."
+        }
       }
     },
     {
       content_id: "5b4a6512326bd9777abfabcf",
       properties: {
-        invites_required: 0,
-        should_discount_addons: false,
-        total_uses: 738,
-        is_archived: false,
-        non_combinable: false,
-        last_used_at: "2021-05-24T22:35:31.149Z",
-        last_purchase_at: "2021-05-24T22:35:31.214Z",
-        some_property_1: nil,
-        some_property_2: "some value..."
+        struct: {
+          invites_required: 0,
+          should_discount_addons: false,
+          total_uses: 738,
+          is_archived: false,
+          non_combinable: false,
+          last_used_at: "2021-05-24T22:35:31.149Z",
+          last_purchase_at: "2021-05-24T22:35:31.214Z",
+          some_property_1: nil,
+          some_property_2: "some value..."
+        }
       }
     }
   ]

@@ -219,12 +219,13 @@ metrics_request = {
 }
 
 # OPTIONAL: You can pass a custom function to "compact" insertions before metrics logging.
-# Note that the PromotedClient has a class method helper, copy_and_remove_properties, that does just this.
-to_compact_metrics_insertion_func = Proc.new do |insertion|
-  insertion.delete(:properties)
-  insertion
+# Note that the PromotedClient has a class method helper, remove_all_properties, that does
+# an implementation of this, returning nil to remove ALL properties.
+to_compact_metrics_properties_func = Proc.new do |properties|
+  properties[:struct].delete(:active)
+  properties
 end
-# metrics_request[:to_compact_metrics_insertion_func] = to_compact_metrics_insertion
+# metrics_request[:to_compact_metrics_properties_func] = to_compact_metrics_properties_func
 
 # Create a client
 client = Promoted::Ruby::Client::PromotedClient.new

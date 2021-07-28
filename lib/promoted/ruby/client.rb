@@ -30,12 +30,10 @@ module Promoted
         end
 
         ##            
-        # A common compact method implementation.
-        def self.copy_and_remove_properties
-          Proc.new do |insertion|
-            insertion = Hash[insertion]
-            insertion.delete(:properties)
-            insertion
+        # A common compact properties method implementation.
+        def self.remove_all_properties
+          Proc.new do |properties|
+            nil
           end
         end
 
@@ -334,7 +332,7 @@ module Promoted
           delivery_request_builder = RequestBuilder.new
           delivery_request_builder.set_request_params args
 
-          delivery_request_params = delivery_request_builder.delivery_request_params(should_compact: false)
+          delivery_request_params = delivery_request_builder.delivery_request_params
           delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
 
           # Call Delivery API and log/ignore errors.
