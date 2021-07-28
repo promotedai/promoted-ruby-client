@@ -99,9 +99,12 @@ module Promoted
           params = {
             user_info: user_info,
             timing: timing,
-            cohort_membership: @experiment,
             client_info: @client_info
           }
+
+          if @experiment
+            params[:cohort_membership] = [@experiment]
+          end
 
           # Log request allows for multiple requests but here we only send one.
           if include_request
