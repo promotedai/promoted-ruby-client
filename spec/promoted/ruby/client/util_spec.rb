@@ -10,7 +10,7 @@ RSpec.describe Promoted::Ruby::Client::Util do
         end
 
         it "translates top-level hashes to snaked symbols" do
-            arr = [{"aA" => "b"}, {"cC" => "d"}]
+            arr = [{"" => "b"}, {"cC" => "d"}]
             new_arr = described_class.translate_array(arr)
             expect(new_arr).to eq [{:a_a => "b"}, {:c_c => "d"}]
         end
