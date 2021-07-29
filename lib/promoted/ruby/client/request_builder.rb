@@ -3,8 +3,8 @@ module Promoted
     module Client
       class RequestBuilder
         attr_reader   :session_id, :only_log, :experiment, :client_info,
-                      :view_id, :insertion, :to_compact_delivery_insertion_func,
-                      :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_insertion_func
+                      :view_id, :insertion, :to_compact_delivery_properties_func,
+                      :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_properties_func
 
         attr_accessor :timing, :user_info, :platform_id
 
@@ -29,8 +29,8 @@ module Promoted
           @full_insertion          = args[:full_insertion]
           @user_info               = request[:user_info] || { :user_id => nil, :log_user_id => nil}
           @timing                  = request[:timing] || { :client_log_timestamp => Time.now.to_i }
-          @to_compact_metrics_insertion_func       = args[:to_compact_metrics_insertion_func]
-          @to_compact_delivery_insertion_func      = args[:to_compact_delivery_insertion_func]
+          @to_compact_metrics_properties_func       = args[:to_compact_metrics_properties_func]
+          @to_compact_delivery_properties_func      = args[:to_compact_delivery_properties_func]
 
           # If the user didn't create a client request id, we do it for them.
           request[:client_request_id] = request[:client_request_id] || @id_generator.newID
@@ -52,7 +52,7 @@ module Promoted
         end
 
         # Only used in delivery
-        def delivery_request_params(should_compact: true)
+        def delivery_request_params
           params = {
             user_info: user_info,
             timing: timing,
@@ -66,7 +66,7 @@ module Promoted
             paging: request[:paging],
             client_request_id: request[:client_request_id]
           }
-          params[:insertion] = should_compact ? compact_delivery_insertions : full_insertion
+          params[:insertion] = insertions_with_compact_props(@to_compact_delivery_properties_func)
 
           params.clean!
         end
@@ -113,18 +113,33 @@ module Promoted
           end
 
           if include_insertions
-            params[:insertion] = compact_metrics_insertions if include_insertions
+            params[:insertion] = compact_metrics_properties if include_insertions
             add_missing_ids_on_insertions! request, params[:insertion]
           end
           
           params.clean!
         end
 
-        def compact_delivery_insertions
-          if !@to_compact_delivery_insertion_func
+        def compact_one_insertion(insertion, compact_func)
+          return insertion if (!compact_func || !insertion[:properties])
+
+          # Only need a copy if there are properties to compact.
+          compact_insertion = insertion.dup
+          compact_insertion[:properties] = compact_func.call(insertion[:properties])
+          compact_insertion.clean!
+          return compact_insertion
+        end
+
+        def insertions_with_compact_props(compact_func)
+          if !compact_func
+            # Nothing to do, avoid copying the whole array.
             full_insertion
           else
-            full_insertion.map {|insertion| @to_compact_delivery_insertion_func.call(insertion) }
+            compact_insertions = Array.new(full_insertion.length)
+            full_insertion.each_with_index {|insertion, index|
+              compact_insertions[index] = compact_one_insertion(insertion, compact_func)
+            }
+            compact_insertions
           end
         end
 
@@ -135,7 +150,7 @@ module Promoted
         end
 
         # TODO: This looks overly complicated.
-        def compact_metrics_insertions
+        def compact_metrics_properties
           @insertion            = [] # insertion should be set according to the compact insertion
           paging                = request[:paging] || {}
           size                  = paging[:size] ? paging[:size].to_i : 0
@@ -155,7 +170,7 @@ module Promoted
             insertion_obj[:insertion_id] = @id_generator.newID
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
-            insertion_obj                = @to_compact_metrics_insertion_func.call(insertion_obj) if @to_compact_metrics_insertion_func
+            insertion_obj                = compact_one_insertion(insertion_obj, @to_compact_metrics_properties_func)
             @insertion << insertion_obj.clean!
           end
           @insertion
