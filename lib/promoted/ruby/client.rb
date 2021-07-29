@@ -113,7 +113,7 @@ module Promoted
         ##
         # Make a delivery request. If @perform_checks is set, input validation will occur and possibly raise errors.
         def deliver args, headers={}
-          args = Promoted::Ruby::Client::Util.translate_args(args)
+          args = Promoted::Ruby::Client::Util.translate_hash(args)
 
           # Respect the enabled state
           if !@enabled
@@ -219,7 +219,7 @@ module Promoted
         # Generate a log request for a subsequent call to send_log_request
         # or for logging via alternative means.
         def prepare_for_logging args, headers={}
-          args = Promoted::Ruby::Client::Util.translate_args(args)
+          args = Promoted::Ruby::Client::Util.translate_hash(args)
 
           if !@enabled
             return {

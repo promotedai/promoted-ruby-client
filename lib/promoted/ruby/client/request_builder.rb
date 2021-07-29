@@ -80,7 +80,10 @@ module Promoted
           end
 
           props = @full_insertion.each_with_object({}) do |insertion, hash|
-            hash[insertion[:content_id]] = insertion[:properties]
+            if insertion.has_key?(:properties)
+              # Don't add nil properties to response insertions.
+              hash[insertion[:content_id]] = insertion[:properties]
+            end
           end
 
           filled_in_copy = []
