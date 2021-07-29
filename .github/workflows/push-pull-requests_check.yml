@@ -1,0 +1,16 @@
+name: Pull-Requests Check
+
+on: [push, pull_request]
+
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-ruby@v2
+      with:
+        ruby-version: 2.5.1
+        bundler-cache: true
+
+    - name: Build and test with rspec
+      run: bundle exec rspec spec
