@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 RSpec.describe Promoted::Ruby::Client::Validator do
-    let!(:input) { Promoted::Ruby::Client::Util.translate_args(SAMPLE_INPUT_WITH_PROP) }
+    let!(:input) { Promoted::Ruby::Client::Util.translate_hash(SAMPLE_INPUT_WITH_PROP) }
     before(:all) { @v = described_class.new }
 
     context("metrics request") do

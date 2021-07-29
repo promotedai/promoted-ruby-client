@@ -1,8 +1,8 @@
 require 'spec_helper'
 
 RSpec.describe Promoted::Ruby::Client::RequestBuilder do
-  let!(:input) { Promoted::Ruby::Client::Util.translate_args(SAMPLE_INPUT) }
-  let!(:input_with_props) { Promoted::Ruby::Client::Util.translate_args(SAMPLE_INPUT_WITH_PROP)}
+  let!(:input) { Promoted::Ruby::Client::Util.translate_hash(SAMPLE_INPUT) }
+  let!(:input_with_props) { Promoted::Ruby::Client::Util.translate_hash(SAMPLE_INPUT_WITH_PROP)}
 
   context "attributes" do
     it "should set attributes" do

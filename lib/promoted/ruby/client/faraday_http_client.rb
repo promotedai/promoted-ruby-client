@@ -1,5 +1,6 @@
 require 'faraday'
 require 'faraday_middleware'
+require 'promoted/ruby/client/util'
 
 module Promoted
     module Ruby
@@ -28,7 +29,7 @@ module Promoted
         
                   norm_headers = response.headers.transform_keys(&:downcase)
                   if norm_headers["content-type"] != nil && norm_headers["content-type"].start_with?("application/json")
-                    JSON.parse(response.body, :symbolize_names => true)
+                    Promoted::Ruby::Client::Util.translate_hash(JSON.parse(response.body))
                   else
                     response.body
                   end
