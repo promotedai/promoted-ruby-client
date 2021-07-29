@@ -122,7 +122,12 @@ module Promoted
 
           # Only need a copy if there are properties to compact.
           compact_insertion = insertion.dup
-          compact_insertion[:properties] = compact_func.call(insertion[:properties])
+
+          # Let the custom function work with a deep copy of the properties.
+          # There's really no way to work with a shallow copy and still be able
+          # to restore the correct insertion properties after a call to delivery.
+          new_props =  Marshal.load(Marshal.dump(insertion[:properties]))
+          compact_insertion[:properties] = compact_func.call(new_props)
           compact_insertion.clean!
           return compact_insertion
         end
