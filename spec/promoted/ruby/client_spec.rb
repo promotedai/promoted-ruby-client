@@ -655,6 +655,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request].key?(:insertion)).to be true
       expect(deliver_resp[:log_request].key?(:request)).to be true
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
+      expect(deliver_resp[:log_request][:cohort_membership].length).to eq 1
+      expect(deliver_resp[:log_request][:cohort_membership][0][:cohort_id]).to eq "HOLD_OUT"
+      expect(deliver_resp[:log_request][:cohort_membership][0][:arm]).to eq "CONTROL"
+      
       expect(deliver_resp.key?(:insertion)).to be true
 
       # Since we did not deliver, log request should have ids set
