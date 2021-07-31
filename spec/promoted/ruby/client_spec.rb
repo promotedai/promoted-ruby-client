@@ -179,7 +179,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "does not throw for invalid paging" do
       input_with_unpaged[:request] = Hash[input_with_unpaged[:request]]
       input_with_unpaged[:request][:paging] = { size: 2, offset: 1000 }
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
       expect(client).not_to receive(:send_request)
       expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
     end
