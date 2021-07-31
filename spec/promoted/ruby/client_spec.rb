@@ -457,7 +457,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request]).to be nil
     end
 
-    it "delivers with nil insertions, which should default to request insertions" do
+    it "delivers with nil insertions, which is not an error" do
       client = described_class.new
       full_insertion = @input[:fullInsertion]
       expect(client).to receive(:send_request).and_return({
@@ -466,7 +466,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
-      expect(deliver_resp[:insertion].length()).to be full_insertion.length()
+      expect(deliver_resp[:insertion].length()).to be 0
       expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['API'])
       expect(deliver_resp[:client_request_id]).not_to be nil
 

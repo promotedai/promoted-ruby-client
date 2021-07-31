@@ -175,7 +175,7 @@ module Promoted
               
               insertions_from_delivery = (response != nil && !deliver_err);
               response_insertions = delivery_request_builder.fill_details_from_response(
-                response ? response[:insertion] : [])
+                response && response[:insertion] || [])
             end
           end
   
@@ -357,7 +357,7 @@ module Promoted
           
           if !@async_shadow_traffic
             ellapsed_time = Time.now - start_time
-            insertions = response ? response[:insertion] : []
+            insertions = response && response[:insertion] || []
             @logger.info("Shadow traffic call completed in #{ellapsed_time.to_f * 1000} ms with #{insertions.length} insertions") if @logger
           end
         end
