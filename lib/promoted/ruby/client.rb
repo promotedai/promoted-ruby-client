@@ -335,6 +335,14 @@ module Promoted
           delivery_request_params = delivery_request_builder.delivery_request_params
           delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
 
+          begin
+            @pager.validate_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
+          rescue InvalidPagingError => err
+            # Invalid input, log and skip.
+            @logger.warn("Shadow traffic call failed with invalid paging #{err}") if @logger
+            return
+          end
+
           # Call Delivery API and log/ignore errors.
           start_time = Time.now
           response = nil
