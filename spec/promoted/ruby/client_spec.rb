@@ -411,15 +411,29 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "delivers in a good case" do
       client = described_class.new
       full_insertion = @input[:fullInsertion]
-      expect(client).to receive(:send_request).and_return({
-        :insertion => full_insertion
-      })
+      
+      delivery_req = nil
+      allow(client).to receive(:send_request) { |value|
+        delivery_req = value
+        { :insertion => full_insertion }
+      }
+
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).to be nil
+
+      # Validate the call occurred
+      expect(delivery_req).not_to be nil
+
+      # We don't compact properties by default.
+      delivery_req[:insertion].each do |insertion|
+        expect(insertion.key?(:properties)).to be true
+        expect(insertion[:properties].key?(:struct)).to be true
+        expect(insertion[:properties][:struct].key?(:product)).to be true
+      end
     end
 
     it "delivers with empty insertions, which is not an error" do
@@ -495,7 +509,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(log_request[:request][0][:client_request_id]).to eq(delivery_req[:client_request_id])
     end
     
-    it "can custom compact insertions" do
+    it "can compact insertions with all properties" do
       @input[:to_compact_delivery_properties_func] = described_class.remove_all_properties
 
       client = described_class.new
@@ -508,8 +522,16 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       deliver_resp = client.deliver @input
 
+      # Request insertions should not have properties
       delivery_req[:insertion].each do |insertion|
         expect(insertion.key?(:properties)).to be false
+      end
+
+      # But we should have put the properties back on the response insertions.
+      deliver_resp[:insertion].each do |insertion|
+        expect(insertion.key?(:properties)).to be true
+        expect(insertion[:properties].key?(:struct)).to be true
+        expect(insertion[:properties][:struct].key?(:product)).to be true
       end
 
       expect(deliver_resp).not_to be nil
@@ -517,6 +539,43 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).to be nil
+    end
+
+    it "can compact insertions with a subset of properties" do
+      to_compact_delivery_properties_func = Proc.new do |properties|
+          properties[:struct][:product].delete(:url)
+          properties
+      end
+
+      @input[:to_compact_delivery_properties_func] = to_compact_delivery_properties_func
+
+      client = described_class.new
+      full_insertion = @input[:fullInsertion]
+      delivery_req = nil
+      allow(client).to receive(:send_request) { |value|
+        delivery_req = value
+        { :insertion => full_insertion }
+      }
+
+      deliver_resp = client.deliver @input
+
+      # Request insertions should have some properties
+      delivery_req[:insertion].each do |insertion|
+        expect(insertion.key?(:properties)).to be true
+        expect(insertion[:properties][:struct].key?(:product)).to be true
+        expect(insertion[:properties][:struct][:product].key?(:id)).to be true
+        expect(insertion[:properties][:struct][:product].key?(:title)).to be true
+        expect(insertion[:properties][:struct][:product].key?(:url)).to be false
+      end
+
+      # We should have put all properties back on the response insertions.
+      deliver_resp[:insertion].each do |insertion|
+        expect(insertion.key?(:properties)).to be true
+        expect(insertion[:properties][:struct].key?(:product)).to be true
+        expect(insertion[:properties][:struct][:product].key?(:id)).to be true
+        expect(insertion[:properties][:struct][:product].key?(:title)).to be true
+        expect(insertion[:properties][:struct][:product].key?(:url)).to be true
+      end
     end
   end
 
