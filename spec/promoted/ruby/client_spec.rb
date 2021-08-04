@@ -421,6 +421,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['API'])
+      expect(deliver_resp[:client_request_id]).to eq(delivery_req[:client_request_id])
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).to be nil
@@ -438,7 +440,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
     it "delivers with empty insertions, which is not an error" do
       client = described_class.new
-      full_insertion = @input[:fullInsertion]
       expect(client).to receive(:send_request).and_return({
         :insertion => []
       })
@@ -446,6 +447,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
       expect(deliver_resp[:insertion].length()).to be 0
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['API'])
+      expect(deliver_resp[:client_request_id]).not_to be nil
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).to be nil
@@ -461,6 +464,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
       expect(deliver_resp[:insertion].length()).to be full_insertion.length()
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['API'])
+      expect(deliver_resp[:client_request_id]).not_to be nil
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).to be nil
@@ -473,9 +478,11 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).not_to be nil
+      expect(deliver_resp[:client_request_id]).to eq(deliver_resp[:log_request][:request][0][:client_request_id])
     end
 
     it "does not deliver for default only_log" do
@@ -484,9 +491,11 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).not_to be nil
+      expect(deliver_resp[:client_request_id]).to eq(deliver_resp[:log_request][:request][0][:client_request_id])
     end
 
     it "swallows errors and defaults the insertions" do
@@ -501,12 +510,14 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
       expect(deliver_resp[:insertion].length()).to eq(@input[:fullInsertion].length())
-
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
+      
       log_request = deliver_resp[:log_request]
       expect(log_request).not_to be nil
 
       # Log request that follows up an unsent delivery request should have the same client request id.
       expect(log_request[:request][0][:client_request_id]).to eq(delivery_req[:client_request_id])
+      expect(deliver_resp[:client_request_id]).to eq(delivery_req[:client_request_id])
     end
     
     it "can compact insertions with all properties" do
@@ -666,7 +677,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request][:cohort_membership].length).to eq 1
       expect(deliver_resp[:log_request][:cohort_membership][0][:cohort_id]).to eq "HOLD_OUT"
       expect(deliver_resp[:log_request][:cohort_membership][0][:arm]).to eq "CONTROL"
-      
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
+
       expect(deliver_resp.key?(:insertion)).to be true
 
       # Since we did not deliver, log request should have ids set
@@ -677,6 +689,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       logging_json[:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
       end
+      expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
     end
 
     it "does not deliver with custom treatment function" do
@@ -696,7 +709,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request].key?(:request)).to be true
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp.key?(:insertion)).to be true
-      
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
+
       expect(called_with[:arm]).to eq @input["experiment"]["arm"]
       expect(called_with.key?(:timing)).to be true
       expect(called_with.key?(:user_info)).to be true
@@ -709,6 +723,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       logging_json[:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
       end
+      expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
     end
 
     it "does deliver for treatment arm" do
@@ -728,6 +743,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request].key?(:insertion)).to be false
       expect(deliver_resp[:log_request].key?(:request)).to be false
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['API'])
+
       expect(deliver_resp.key?(:insertion)).to be true
     end
 
@@ -755,6 +772,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request].key?(:request)).to be false
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp.key?(:insertion)).to be true
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['API'])
+      expect(deliver_resp[:client_request_id]).to eq(delivery_req[:client_request_id])
 
       expect(called_with[:arm]).to eq @input["experiment"]["arm"]
       expect(called_with.key?(:timing)).to be true

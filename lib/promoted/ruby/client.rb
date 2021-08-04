@@ -210,7 +210,9 @@ module Promoted
 
           client_response = {
             insertion: response_insertions,
-            log_request: log_req
+            log_request: log_req,
+            execution_server: insertions_from_delivery ? Promoted::Ruby::Client::EXECUTION_SERVER['API'] : Promoted::Ruby::Client::EXECUTION_SERVER['SDK'],
+            client_request_id: delivery_request_builder.client_request_id
           }
           return client_response
         end
