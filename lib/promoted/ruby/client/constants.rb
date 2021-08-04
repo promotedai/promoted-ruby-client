@@ -32,6 +32,8 @@ module Promoted
       CLIENT_TYPE = {'UNKNOWN_REQUEST_CLIENT' => 'UNKNOWN_REQUEST_CLIENT',
                      'PLATFORM_SERVER' => 'PLATFORM_SERVER',
                      'PLATFORM_CLIENT' => 'PLATFORM_CLIENT'}
+
+      EXECUTION_SERVER = {'API' => 'API', 'SDK' => 'SDK'}
     end
   end
 end

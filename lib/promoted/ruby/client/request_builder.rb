@@ -64,7 +64,7 @@ module Promoted
             search_query: request[:search_query],
             properties: request[:properties],
             paging: request[:paging],
-            client_request_id: request[:client_request_id]
+            client_request_id: client_request_id
           }
           params[:insertion] = insertions_with_compact_props(@to_compact_delivery_properties_func)
 
@@ -182,6 +182,10 @@ module Promoted
             @insertion << insertion_obj.clean!
           end
           @insertion
+        end
+
+        def client_request_id
+          request[:client_request_id]
         end
 
         private
