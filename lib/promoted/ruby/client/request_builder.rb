@@ -2,7 +2,7 @@ module Promoted
   module Ruby
     module Client
       class RequestBuilder
-        attr_reader   :session_id, :only_log, :experiment, :client_info,
+        attr_reader   :session_id, :only_log, :experiment, :client_info, :device,
                       :view_id, :insertion, :to_compact_delivery_properties_func,
                       :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_properties_func
 
@@ -24,6 +24,7 @@ module Promoted
           @session_id              = request[:session_id]
           @platform_id             = request[:platform_id]
           @client_info             = request[:client_info] || {}
+          @device                  = request[:device] || {}
           @view_id                 = request[:view_id]
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || Promoted::Ruby::Client::USE_CASES['UNKNOWN_USE_CASE']
           @full_insertion          = args[:full_insertion]
@@ -57,6 +58,7 @@ module Promoted
             user_info: user_info,
             timing: timing,
             client_info: @client_info.merge({ :client_type => Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER'] }),
+            device: @device,
             platform_id: @platform_id,
             view_id: @view_id,
             session_id: @session_id,
@@ -102,7 +104,8 @@ module Promoted
           params = {
             user_info: user_info,
             timing: timing,
-            client_info: @client_info
+            client_info: @client_info,
+            device: @device
           }
 
           if @experiment

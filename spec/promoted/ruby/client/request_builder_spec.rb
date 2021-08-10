@@ -73,10 +73,24 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                   {
                     client_log_timestamp: request_builder.timing[:client_log_timestamp]
                   },
+                  device: {
+                    device_type: "DESKTOP",
+                    ip_address: "127.0.0.1",
+                    browser: {
+                        user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
+                    }
+                  },              
                   request:
                   [{
                     :user_info=> {:user_id=>"912", :log_user_id=>"91232"},
                     :use_case=>"FEED",
+                    device: {
+                      device_type: "DESKTOP",
+                      ip_address: "127.0.0.1",
+                      browser: {
+                          user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
+                      }
+                    },  
                     :properties=>
                     {
                       :struct=>
