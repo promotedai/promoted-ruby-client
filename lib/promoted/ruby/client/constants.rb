@@ -34,6 +34,11 @@ module Promoted
                      'PLATFORM_CLIENT' => 'PLATFORM_CLIENT'}
 
       EXECUTION_SERVER = {'API' => 'API', 'SDK' => 'SDK'}
+
+      DEVICE_TYPE = {'UNKNOWN_DEVICE_TYPE' => 'UNKNOWN_DEVICE_TYPE',
+                     'DESKTOP' => 'DESKTOP',
+                     'MOBILE' => 'MOBILE',
+                     'TABLET' => 'TABLET'}
     end
   end
 end
