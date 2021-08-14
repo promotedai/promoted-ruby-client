@@ -103,6 +103,14 @@ Field Name | Type | Optional? | Description
 ```:height``` | Integer | No | Screen height
 ---
 
+### Screen
+User's screen dimensions.
+Field Name | Type | Optional? | Description
+---------- | ---- | --------- | -----------
+```:size``` | Size | Yes | Screen size
+```:scale``` | Float | Yes | Current screen scaling factor
+---
+
 ### ClientHints
 Alternative to user-agent strings. See https://raw.githubusercontent.com/snowplow/iglu-central/master/schemas/org.ietf/http_client_hints/jsonschema/1-0-0
 Field Name | Type | Optional? | Description
