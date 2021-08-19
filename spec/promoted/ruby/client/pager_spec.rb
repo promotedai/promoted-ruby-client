@@ -75,7 +75,7 @@ RSpec.describe Promoted::Ruby::Client::Pager do
       expect(res[1][:position]).to eq 2
     end
 
-    it "creates a short page if necessary at the end" do
+    it "creates a short page if necessary at the end - unpaged" do
       paging = {
         :size => 3,
         :offset => 1
@@ -92,6 +92,27 @@ RSpec.describe Promoted::Ruby::Client::Pager do
       # Positions start at offset when unpaged.
       expect(res[0][:position]).to eq 1
       expect(res[1][:position]).to eq 2
+    end
+
+    it "does not create a short page at the end - prepaged" do
+      paging = {
+        :size => 4,
+        :offset => 1
+      }
+
+      pager = subject.class.new
+      res = pager.apply_paging(@insertions, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED'], paging)
+      expect(res.length).to eq @insertions.length
+
+      # We get a full page back since we don't offset into prepaged insertions
+      expect(res[0][:insertion_id]).to eq @insertions[0][:insertion_id]
+      expect(res[1][:insertion_id]).to eq @insertions[1][:insertion_id]
+      expect(res[2][:insertion_id]).to eq @insertions[2][:insertion_id]
+
+      # Positions start at offset.
+      expect(res[0][:position]).to eq 1
+      expect(res[1][:position]).to eq 2
+      expect(res[2][:position]).to eq 3
     end
 
     it "pages a window when prepaged" do

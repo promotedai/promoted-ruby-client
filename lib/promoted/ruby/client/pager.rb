@@ -47,7 +47,7 @@ module Promoted
                 size = insertions.length
               end
 
-              final_insertion_size = [size, insertions.length - offset].min
+              final_insertion_size = [size, insertions.length - index].min
               insertion_page = Array.new(final_insertion_size)
               0.upto(final_insertion_size - 1) {|i|
                 insertion = insertions[index]
