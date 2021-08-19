@@ -78,7 +78,7 @@ module Promoted
         # to the responses.
         def fill_details_from_response response_insertions
           if !response_insertions then
-            response_insertions = full_insertion
+            response_insertions = []
           end
 
           props = @full_insertion.each_with_object({}) do |insertion, hash|
