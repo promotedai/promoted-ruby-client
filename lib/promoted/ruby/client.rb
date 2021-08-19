@@ -39,7 +39,7 @@ module Promoted
 
         ##
         # Create and configure a new Promoted client.
-        def initialize (params={})
+        def initialize(params={})
           @perform_checks = true
           if params[:perform_checks] != nil
             @perform_checks = params[:perform_checks]
@@ -318,7 +318,7 @@ module Promoted
 
             ellapsed_time = Time.now - start_time
             @logger.debug("Sync send_request completed in #{ellapsed_time.to_f * 1000} ms") if @logger
-        end
+          end
 
           return resp
         end

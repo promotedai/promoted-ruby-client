@@ -733,9 +733,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       full_insertion = @input[:fullInsertion]
       client = described_class.new
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
-      delivery_req = nil
       expect(client).to receive(:send_request) {|value|
-        delivery_req = value
       }.and_return({
         :insertion => full_insertion
       })

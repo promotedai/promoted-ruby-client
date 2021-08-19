@@ -57,22 +57,41 @@ RSpec.describe Promoted::Ruby::Client::Pager do
 
   context "apply paging" do
     it "pages a window when unpaged" do
-        paging = {
-          :size => 2,
-          :offset => 1
-        }
+      paging = {
+        :size => 2,
+        :offset => 1
+      }
 
-        pager = subject.class.new
-        res = pager.apply_paging(@insertions, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], paging)
-        expect(res.length).to eq @insertions.length - 1
+      pager = subject.class.new
+      res = pager.apply_paging(@insertions, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], paging)
+      expect(res.length).to eq @insertions.length - 1
 
-        # We take a page size of 2 starting at offset 1
-        expect(res[0][:insertion_id]).to eq @insertions[1][:insertion_id]
-        expect(res[1][:insertion_id]).to eq @insertions[2][:insertion_id]
+      # We take a page size of 2 starting at offset 1
+      expect(res[0][:insertion_id]).to eq @insertions[1][:insertion_id]
+      expect(res[1][:insertion_id]).to eq @insertions[2][:insertion_id]
 
-        # Positions start at offset when unpaged.
-        expect(res[0][:position]).to eq 1
-        expect(res[1][:position]).to eq 2
+      # Positions start at offset when unpaged.
+      expect(res[0][:position]).to eq 1
+      expect(res[1][:position]).to eq 2
+    end
+
+    it "creates a short page if necessary at the end" do
+      paging = {
+        :size => 3,
+        :offset => 1
+      }
+
+      pager = subject.class.new
+      res = pager.apply_paging(@insertions, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], paging)
+      expect(res.length).to eq @insertions.length - 1
+
+      # We take a page size of 2 since the 3rd would be off the end, starting at offset 1
+      expect(res[0][:insertion_id]).to eq @insertions[1][:insertion_id]
+      expect(res[1][:insertion_id]).to eq @insertions[2][:insertion_id]
+
+      # Positions start at offset when unpaged.
+      expect(res[0][:position]).to eq 1
+      expect(res[1][:position]).to eq 2
     end
 
     it "pages a window when prepaged" do
@@ -95,11 +114,6 @@ RSpec.describe Promoted::Ruby::Client::Pager do
     end
 
     it "returns everything when no paging provided" do
-      paging = {
-        :size => 2,
-        :offset => 1
-      }
-
       pager = subject.class.new
       res = pager.apply_paging(@insertions, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'])
       expect(res.length).to eq @insertions.length
