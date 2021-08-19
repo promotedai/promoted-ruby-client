@@ -11,13 +11,13 @@ module Promoted
         end
         
         class Pager
-            def validate_paging (insertions, paging)
+            def validate_paging(insertions, paging)
               if paging && paging[:offset] && paging[:offset] >= insertions.length
                 raise InvalidPagingError.new("Invalid page offset (insertion size #{insertions.length}, offset #{paging[:offset]})", [])
               end
             end
 
-            def apply_paging (insertions, insertion_page_type, paging = nil)
+            def apply_paging(insertions, insertion_page_type, paging = nil)
               begin
                 validate_paging(insertions, paging)
               rescue InvalidPagingError => err
@@ -47,7 +47,7 @@ module Promoted
                 size = insertions.length
               end
 
-              final_insertion_size = [size, insertions.length].min
+              final_insertion_size = [size, insertions.length - index].min
               insertion_page = Array.new(final_insertion_size)
               0.upto(final_insertion_size - 1) {|i|
                 insertion = insertions[index]
@@ -63,5 +63,5 @@ module Promoted
             end
         end
       end
-   end
+    end
 end
