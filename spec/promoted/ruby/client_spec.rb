@@ -668,10 +668,15 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       }
     end
 
-    it "does not deliver for control arm" do
+    it "delivers shadow traffic for control arm" do
       client = described_class.new
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
-      expect(client).not_to receive(:send_request)
+      
+      delivery_req = nil
+      expect(client).to receive(:send_request) {|value|
+        delivery_req = value
+      }
+      
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp[:log_request].key?(:insertion)).to be true
@@ -693,9 +698,12 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         expect(insertion[:request_id]).not_to be nil
       end
       expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
+
+      # The request should be shadow traffic.
+      expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
     end
 
-    it "does not deliver with custom treatment function" do
+    it "delivers shadow traffic with custom treatment function" do
       called_with = nil
       should_apply_func = Proc.new do |cohort_membership|
         called_with = cohort_membership
@@ -705,7 +713,12 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       client = described_class.new({ :should_apply_treatment_func => should_apply_func })
 
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
-      expect(client).not_to receive(:send_request)
+
+      delivery_req = nil
+      expect(client).to receive(:send_request) {|value|
+        delivery_req = value
+      }
+      
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp[:log_request].key?(:insertion)).to be true
@@ -727,6 +740,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         expect(insertion[:request_id]).not_to be nil
       end
       expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
+ 
+       # The request should be shadow traffic.
+       expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
     end
 
     it "does deliver for treatment arm" do
