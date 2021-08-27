@@ -19,7 +19,8 @@ module Promoted
         class Error < StandardError; end
 
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
-                    :default_request_headers, :http_client, :logger, :shadow_traffic_delivery_percent, :async_shadow_traffic
+                    :default_request_headers, :http_client, :logger, :shadow_traffic_delivery_percent, :async_shadow_traffic,
+                    :send_shadow_traffic_for_control
                     
         attr_accessor :request_logging_on, :enabled
         
@@ -77,6 +78,11 @@ module Promoted
           @async_shadow_traffic = true
           if params[:async_shadow_traffic] != nil
             @async_shadow_traffic = params[:async_shadow_traffic] || false
+          end
+
+          @send_shadow_traffic_for_control = true
+          if params[:send_shadow_traffic_for_control] != nil
+            @send_shadow_traffic_for_control = params[:send_shadow_traffic_for_control] || false
           end
 
           @pool = nil
@@ -171,7 +177,7 @@ module Promoted
                 deliver_err = true
                 @logger.error("Error calling delivery: " + err.message) if @logger
               end
-            else
+            elsif @send_shadow_traffic_for_control
               # Call Delivery API to send shadow traffic. This will create the request params with traffic type set.
               deliver_shadow_traffic args, headers
             end
