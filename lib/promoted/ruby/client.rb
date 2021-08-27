@@ -19,7 +19,8 @@ module Promoted
         class Error < StandardError; end
 
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
-                    :default_request_headers, :http_client, :logger, :shadow_traffic_delivery_percent, :async_shadow_traffic
+                    :default_request_headers, :http_client, :logger, :shadow_traffic_delivery_percent, :async_shadow_traffic,
+                    :send_shadow_traffic_for_control
                     
         attr_accessor :request_logging_on, :enabled
         
@@ -77,6 +78,11 @@ module Promoted
           @async_shadow_traffic = true
           if params[:async_shadow_traffic] != nil
             @async_shadow_traffic = params[:async_shadow_traffic] || false
+          end
+
+          @send_shadow_traffic_for_control = true
+          if params[:send_shadow_traffic_for_control] != nil
+            @send_shadow_traffic_for_control = params[:send_shadow_traffic_for_control] || false
           end
 
           @pool = nil
@@ -161,9 +167,8 @@ module Promoted
             cohort_membership_to_log = delivery_request_builder.new_cohort_membership_to_log
 
             if should_apply_treatment(cohort_membership_to_log)
-              delivery_request_params = delivery_request_builder.delivery_request_params
-  
-              # Call Delivery API
+              # Call Delivery API to get insertions to use
+              delivery_request_params = delivery_request_builder.delivery_request_params  
               begin
                 response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers)
               rescue  StandardError => err
@@ -172,11 +177,14 @@ module Promoted
                 deliver_err = true
                 @logger.error("Error calling delivery: " + err.message) if @logger
               end
-              
-              insertions_from_delivery = (response != nil && !deliver_err);
-              response_insertions = delivery_request_builder.fill_details_from_response(
-                response && response[:insertion] || [])
+            elsif @send_shadow_traffic_for_control
+              # Call Delivery API to send shadow traffic. This will create the request params with traffic type set.
+              deliver_shadow_traffic args, headers
             end
+
+            insertions_from_delivery = (response != nil && !deliver_err);
+            response_insertions = delivery_request_builder.fill_details_from_response(
+              response && response[:insertion] || [])
           end
   
           request_to_log = nil

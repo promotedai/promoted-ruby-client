@@ -49,6 +49,7 @@ Name | Type | Description
 ```:perform_checks``` | Boolean | Whether or not to perform detailed input validation, defaults to true but may be disabled for performance
 ```:logger``` | Ruby Logger-compatible logger | Defaults to nil (no logging). Example: ```Logger.new(STDERR, :progname => 'promotedai')```
 ```:shadow_traffic_delivery_percent``` | Number between 0 and 1 | % of ```prepare_for_logging``` traffic that gets directed to Delivery API as "shadow traffic". Defaults to 0 (no shadow traffic).
+```:send_shadow_traffic_for_control``` | Boolean | If true, the ```deliver``` method will send shadow traffic for users in the CONTROL arm of an experiment. Defaults to true.
 ```:default_request_headers``` | Hash | Additional headers to send on the request beyond ```x-api-key```. Defaults to {}
 ```:default_only_log``` | Boolean | If true, the ```deliver``` method will not direct traffic to Delivery API but rather return a request suitable for logging. Defaults to false.
 ```:should_apply_treatment_func``` | Proc | Called during delivery, accepts an experiment and returns a Boolean indicating whether the request should be considered part of the control group (false) or in the experiment (true). If nil, the default behavior of checking the experiement ```:arm``` is applied.

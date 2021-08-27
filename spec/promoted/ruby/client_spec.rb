@@ -668,10 +668,46 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       }
     end
 
-    it "does not deliver for control arm" do
+    it "delivers shadow traffic for control arm by default" do
       client = described_class.new
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
+      
+      delivery_req = nil
+      expect(client).to receive(:send_request) {|value|
+        delivery_req = value
+      }
+      
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+      expect(deliver_resp[:log_request].key?(:insertion)).to be true
+      expect(deliver_resp[:log_request].key?(:request)).to be true
+      expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
+      expect(deliver_resp[:log_request][:cohort_membership].length).to eq 1
+      expect(deliver_resp[:log_request][:cohort_membership][0][:cohort_id]).to eq "HOLD_OUT"
+      expect(deliver_resp[:log_request][:cohort_membership][0][:arm]).to eq "CONTROL"
+      expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
+
+      expect(deliver_resp.key?(:insertion)).to be true
+
+      # Since we did not deliver, log request should have ids set
+      logging_json = deliver_resp[:log_request]
+      expect(logging_json[:request].length).to eq 1
+      expect(logging_json[:request][0][:client_request_id]).not_to be nil
+      expect(logging_json[:request][0][:request_id]).not_to be nil
+      logging_json[:insertion].each do |insertion|
+        expect(insertion[:request_id]).not_to be nil
+      end
+      expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
+
+      # The request should be shadow traffic.
+      expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
+    end
+
+    it "does not delivers shadow traffic for control arm when the option is off" do
+      client = described_class.new({ :send_shadow_traffic_for_control => false })
+      @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
       expect(client).not_to receive(:send_request)
+
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp[:log_request].key?(:insertion)).to be true
@@ -695,7 +731,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
     end
 
-    it "does not deliver with custom treatment function" do
+    it "delivers shadow traffic with custom treatment function" do
       called_with = nil
       should_apply_func = Proc.new do |cohort_membership|
         called_with = cohort_membership
@@ -705,7 +741,12 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       client = described_class.new({ :should_apply_treatment_func => should_apply_func })
 
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
-      expect(client).not_to receive(:send_request)
+
+      delivery_req = nil
+      expect(client).to receive(:send_request) {|value|
+        delivery_req = value
+      }
+      
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp[:log_request].key?(:insertion)).to be true
@@ -727,6 +768,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         expect(insertion[:request_id]).not_to be nil
       end
       expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
+ 
+       # The request should be shadow traffic.
+       expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
     end
 
     it "does deliver for treatment arm" do
