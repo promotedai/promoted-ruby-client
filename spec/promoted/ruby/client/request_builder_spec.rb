@@ -69,6 +69,11 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                   {
                     user_id: "912", log_user_id: "91232"
                   },
+                  client_info:
+                  {
+                    traffic_type: "PRODUCTION",
+                    client_type: "PLATFORM_SERVER"
+                  },
                   timing:
                   {
                     client_log_timestamp: request_builder.timing[:client_log_timestamp]
