@@ -439,6 +439,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         expect(insertion[:properties].key?(:struct)).to be true
         expect(insertion[:properties][:struct].key?(:product)).to be true
       end
+
+      expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
+      expect(delivery_req[:client_info][:client_type]).to be Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER']
     end
 
     it "delivers with empty insertions, which is not an error" do
@@ -459,7 +462,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
     it "delivers with nil insertions, which is not an error" do
       client = described_class.new
-      full_insertion = @input[:fullInsertion]
       expect(client).to receive(:send_request).and_return({
         :insertion => nil
       })
@@ -777,7 +779,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       full_insertion = @input[:fullInsertion]
       client = described_class.new
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
+
+      delivery_req = nil
       expect(client).to receive(:send_request) {|value|
+        delivery_req = value
       }.and_return({
         :insertion => full_insertion
       })
@@ -791,6 +796,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['API'])
 
       expect(deliver_resp.key?(:insertion)).to be true
+
+      expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
     end
 
     it "does deliver with custom treatment function" do
@@ -823,6 +830,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(called_with[:arm]).to eq @input["experiment"]["arm"]
       expect(called_with.key?(:timing)).to be true
       expect(called_with.key?(:user_info)).to be true
+
+      expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
     end
   end
 

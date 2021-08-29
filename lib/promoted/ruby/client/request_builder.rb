@@ -57,7 +57,7 @@ module Promoted
           params = {
             user_info: user_info,
             timing: timing,
-            client_info: @client_info.merge({ :client_type => Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER'] }),
+            client_info: merge_client_info_defaults,
             device: @device,
             platform_id: @platform_id,
             view_id: @view_id,
@@ -104,7 +104,7 @@ module Promoted
           params = {
             user_info: user_info,
             timing: timing,
-            client_info: @client_info,
+            client_info: merge_client_info_defaults,
             device: @device
           }
 
@@ -193,6 +193,13 @@ module Promoted
 
         private
 
+        def merge_client_info_defaults
+          return @client_info.merge({
+            :client_type => Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER'],
+            :traffic_type => Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
+          })
+        end
+        
         def add_missing_ids_on_insertions! request, insertions
           insertions.each do |insertion|
             insertion[:insertion_id] = @id_generator.newID if not insertion[:insertion_id]
