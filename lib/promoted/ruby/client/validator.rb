@@ -14,6 +14,10 @@ module Promoted
                         {
                             :name => :log_user_id,
                             :type => String
+                        },
+                        {
+                            :name => :is_internal_user,
+                            :type => [TrueClass, FalseClass]
                         }
                     ]
                 )
@@ -147,7 +151,11 @@ module Promoted
 
                     # If a field is provided as non-nil, it should be of the correct type.
                     if field[:type] && obj.has_key?(field[:name]) && obj[field[:name]] != nil then
-                        raise ValidationError.new(field[:name].to_s + " should be a " + field[:type].to_s) if !obj[field[:name]].is_a?(field[:type])
+                        if field[:type].is_a?(Array) then
+                            raise ValidationError.new(field[:name].to_s + " should be one of " + field[:type].to_s) if !field[:type].include?(obj[field[:name]].class)
+                        else
+                            raise ValidationError.new(field[:name].to_s + " should be a " + field[:type].to_s) if !obj[field[:name]].is_a?(field[:type])
+                        end
                     end
                 }
             end

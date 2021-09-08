@@ -99,6 +99,24 @@ RSpec.describe Promoted::Ruby::Client::Validator do
             expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /log_user_id/)
         end
 
+        it "validates correct is_internal_user type for false" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            dup_input[:request][:user_info][:is_internal_user] = false
+            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+        end
+
+        it "validates correct is_internal_user type for true" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            dup_input[:request][:user_info][:is_internal_user] = true
+            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+        end
+
+        it "validates incorrect is_internal_user type" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            dup_input[:request][:user_info][:is_internal_user] = 5
+            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /is_internal_user/)
+        end
+
         it "allows nil as a value on optional types" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:user_info][:user_id] = nil
