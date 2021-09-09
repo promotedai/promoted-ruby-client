@@ -178,13 +178,18 @@ module Promoted
             insertion_obj                = Hash[insertion_obj]
             insertion_obj[:user_info]    = user_info
             insertion_obj[:timing]       = timing
-            insertion_obj[:insertion_id] = @id_generator.newID
             insertion_obj[:request_id]   = request_id
             insertion_obj[:position]     = offset + index
             insertion_obj                = compact_one_insertion(insertion_obj, @to_compact_metrics_properties_func)
             @insertion << insertion_obj.clean!
           end
           @insertion
+        end
+
+        def add_missing_insertion_ids! insertions
+          insertions.each do |insertion|
+            insertion[:insertion_id] = @id_generator.newID if not insertion[:insertion_id]
+          end
         end
 
         def client_request_id
@@ -202,10 +207,10 @@ module Promoted
         
         def add_missing_ids_on_insertions! request, insertions
           insertions.each do |insertion|
-            insertion[:insertion_id] = @id_generator.newID if not insertion[:insertion_id]
             insertion[:session_id] = request[:session_id] if request[:session_id]
             insertion[:request_id] = request[:request_id] if request[:request_id]
           end
+          add_missing_insertion_ids! insertions
         end
 
         # A list of the response Insertions.  This client expects lists to be truncated

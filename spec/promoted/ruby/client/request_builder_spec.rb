@@ -32,6 +32,30 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
     end
   end
 
+  context "add_missing_insertion_ids" do
+    it "adds missing insertion ids" do
+      insertions = [
+        { :content_id=>"5b4a6512326bd9777abfabc34" },
+        { :content_id=>"5b4a6512326bd9777abfabea" },
+      ]
+      request_builder = subject.class.new({:id_generator => FakeIdGenerator.new })
+      request_builder.add_missing_insertion_ids! insertions
+      expect(insertions[0][:insertion_id]).to eq "10"
+      expect(insertions[1][:insertion_id]).to eq "10"
+    end
+
+    it "respects existing insertion ids" do
+      insertions = [
+        { :content_id=>"5b4a6512326bd9777abfabc34", :insertion_id => "1" },
+        { :content_id=>"5b4a6512326bd9777abfabea", :insertion_id => "2" },
+      ]
+      request_builder = subject.class.new({:id_generator => FakeIdGenerator.new })
+      request_builder.add_missing_insertion_ids! insertions
+      expect(insertions[0][:insertion_id]).to eq "1"
+      expect(insertions[1][:insertion_id]).to eq "2"
+    end
+  end
+
   context "delivery_request_params" do
     it "should return expected delivery request" do
       request_builder = subject.class.new({:id_generator => FakeIdGenerator.new })

@@ -190,7 +190,7 @@ module Promoted
           request_to_log = nil
           if !insertions_from_delivery then
             request_to_log = delivery_request_builder.request
-            response_insertions = @pager.apply_paging(delivery_request_builder.full_insertion, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], delivery_request_builder.request[:paging])
+            response_insertions = build_sdk_response_insertions(delivery_request_builder)
           end
 
           log_req = nil
@@ -274,6 +274,14 @@ module Promoted
 
         private
 
+        ##
+        # Creates response insertions for SDK-side delivery, when we don't get response insertions from Delivery API.
+        def build_sdk_response_insertions delivery_request_builder
+          response_insertions = @pager.apply_paging(delivery_request_builder.full_insertion, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], delivery_request_builder.request[:paging])
+          delivery_request_builder.add_missing_insertion_ids! response_insertions
+          return response_insertions
+        end
+        
         def do_warmup
           if !@delivery_endpoint
             # Warmup only supported when delivery is enabled.

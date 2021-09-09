@@ -523,6 +523,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       # Log request that follows up an unsent delivery request should have the same client request id.
       expect(log_request[:request][0][:client_request_id]).to eq(delivery_req[:client_request_id])
       expect(deliver_resp[:client_request_id]).to eq(delivery_req[:client_request_id])
+
+      # Should fill in insertion id
+      expect(deliver_resp[:insertion][0][:insertion_id]).not_to be nil
     end
     
     it "can compact insertions with all properties" do
@@ -705,7 +708,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
     end
 
-    it "does not delivers shadow traffic for control arm when the option is off" do
+    it "does not deliver shadow traffic for control arm when the option is off" do
       client = described_class.new({ :send_shadow_traffic_for_control => false })
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
       expect(client).not_to receive(:send_request)
