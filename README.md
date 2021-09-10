@@ -63,6 +63,7 @@ Field Name | Type | Optional? | Description
 ---------- | ---- | --------- | -----------
 ```:user_id``` | String | Yes | The platform user id, cleared from Promoted logs.
 ```:log_user_id``` | String | Yes | A different user id (presumably a UUID) disconnected from the platform user id, good for working with unauthenticated users or implementing right-to-be-forgotten.
+```:is_internal_user``` | Boolean | Yes | If this user is a test user or not, defaults to false.
 
 ---
 ### CohortMembership
