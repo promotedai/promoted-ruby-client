@@ -245,12 +245,6 @@ RSpec.describe Promoted::Ruby::Client::Validator do
             dup_input[:insertion] = []
             expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /Set full_insertion/)
         end
-    
-        it "should raise delivery_score error for insertion" do
-            dup_input = Marshal.load(Marshal.dump(input))
-            dup_input[:full_insertion].first[:delivery_score] = 5
-            expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /deliveryScore should not be set/)
-        end
     end
 end
 
