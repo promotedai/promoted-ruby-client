@@ -137,7 +137,6 @@ module Promoted
                 req[:full_insertion].each do |insertion_hash|
                   raise ValidationError.new("Insertion.requestId should not be set") if insertion_hash[:request_id]
                   raise ValidationError.new("'Insertion.insertionId should not be set") if insertion_hash[:insertion_id]
-                  raise ValidationError.new("Insertion.deliveryScore should not be set") if insertion_hash[:delivery_score]
                 end
             end
             
