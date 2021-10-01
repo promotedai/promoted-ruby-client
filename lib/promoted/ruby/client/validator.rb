@@ -59,6 +59,14 @@ module Promoted
                         {
                             :name => :delivery_score,
                             :type => Integer
+                        },
+                        {
+                            :name => :retrieval_rank,
+                            :type => Integer
+                        },
+                        {
+                            :name => :retrieval_score,
+                            :type => Float
                         }
                     ]
                 )

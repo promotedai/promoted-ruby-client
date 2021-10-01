@@ -221,6 +221,30 @@ RSpec.describe Promoted::Ruby::Client::Validator do
             dup_input[:full_insertion][0][:delivery_score] = "5"
             expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /delivery_score/)
         end       
+       
+        it "validates correct retrieval_rank type" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            dup_input[:full_insertion][0][:retrieval_rank] = 5
+            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+        end
+
+        it "validates incorrect retrieval_rank type" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            dup_input[:full_insertion][0][:retrieval_rank] = "5"
+            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /retrieval_rank/)
+        end       
+       
+        it "validates correct retrieval_score type" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            dup_input[:full_insertion][0][:retrieval_score] = 5.2
+            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+        end
+
+        it "validates incorrect retrieval_score type" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            dup_input[:full_insertion][0][:retrieval_score] = "5.2"
+            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /retrieval_score/)
+        end       
     end
 
     context "check log ids not set" do
