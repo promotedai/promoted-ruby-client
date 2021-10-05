@@ -105,7 +105,12 @@ module Promoted
             user_info: user_info,
             timing: timing,
             client_info: merge_client_info_defaults,
-            device: @device
+            device: @device,
+            delivery_log: {
+              execution: {
+                execution_server: Promoted::Ruby::Client::EXECUTION_SERVER['SDK']
+              }
+            }
           }
 
           if @experiment
@@ -115,12 +120,16 @@ module Promoted
           # Log request allows for multiple requests but here we only send one.
           if include_request
             request[:request_id] = request[:request_id] || @id_generator.newID
-            params[:request] = [request]
+            # Set request on delivery log.
+            params[:delivery_log][:request] = request
           end
 
           if include_insertions
-            params[:insertion] = compact_metrics_properties if include_insertions
-            add_missing_ids_on_insertions! request, params[:insertion]
+            # Add a response containing compacted insertions to delivery log.
+            params[:delivery_log][:response] = {
+              insertion: compact_metrics_properties
+            }
+            add_missing_ids_on_insertions! request, params[:delivery_log][:response][:insertion]
           end
           
           params.clean!
