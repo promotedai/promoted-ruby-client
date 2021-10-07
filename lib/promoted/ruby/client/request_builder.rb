@@ -106,11 +106,11 @@ module Promoted
             timing: timing,
             client_info: merge_client_info_defaults,
             device: @device,
-            delivery_log: {
+            delivery_log: [{
               execution: {
                 execution_server: Promoted::Ruby::Client::EXECUTION_SERVER['SDK']
               }
-            }
+            }]
           }
 
           if @experiment
@@ -121,15 +121,15 @@ module Promoted
           if include_request
             request[:request_id] = request[:request_id] || @id_generator.newID
             # Set request on delivery log.
-            params[:delivery_log][:request] = request
+            params[:delivery_log][0][:request] = request
           end
 
           if include_insertions
             # Add a response containing compacted insertions to delivery log.
-            params[:delivery_log][:response] = {
+            params[:delivery_log][0][:response] = {
               insertion: compact_metrics_properties
             }
-            add_missing_ids_on_insertions! request, params[:delivery_log][:response][:insertion]
+            add_missing_ids_on_insertions! request, params[:delivery_log][0][:response][:insertion]
           end
           
           params.clean!
