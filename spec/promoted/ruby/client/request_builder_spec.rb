@@ -108,70 +108,79 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                     browser: {
                         user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
                     }
-                  },              
-                  request:
-                  [{
-                    :user_info=> {:user_id=>"912", :log_user_id=>"91232"},
-                    :use_case=>"FEED",
-                    device: {
-                      device_type: "DESKTOP",
-                      ip_address: "127.0.0.1",
-                      browser: {
-                          user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
-                      }
-                    },  
-                    :properties=>
-                    {
-                      :struct=>
+                  },
+                  delivery_log: [{
+                    request: {
+                      :user_info=> {:user_id=>"912", :log_user_id=>"91232"},
+                      :use_case=>"FEED",
+                      device: {
+                        device_type: "DESKTOP",
+                        ip_address: "127.0.0.1",
+                        browser: {
+                            user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
+                        }
+                      },  
+                      :properties=>
                       {
-                        :query=>{}
-                      }
+                        :struct=>
+                        {
+                          :query => {}
+                        }
+                      },
+                      request_id: "10",
+                      client_request_id: "10"
                     },
-                    request_id: "10",
-                    client_request_id: "10"
+                    execution: {
+                      execution_server: "SDK"
+                    },
+                    response: {
+                      insertion:
+                      [{
+                        content_id: "5b4a6512326bd9777abfabc34",
+                        user_info: {user_id: "912", log_user_id: "91232"},
+                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
+                        insertion_id: "10",
+                        position: 0,
+                        request_id: "10"
+                      },
+                      {
+                        content_id: "5b4a6512326bd9777abfabea",
+                        user_info: {user_id: "912", log_user_id: "91232"},
+                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
+                        insertion_id: "10",
+                        position: 1,
+                        request_id: "10"
+                      },
+                      {
+                        content_id: "5b4a6512326bd9777abfabcf",
+                        user_info: {user_id: "912", log_user_id: "91232"},
+                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
+                        insertion_id: "10",
+                        position: 2,
+                        request_id: "10"
+                      },
+                      {
+                        content_id: "5b4a6512326bd9777abfabcf",
+                        user_info: {user_id: "912", log_user_id: "91232"},
+                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
+                        insertion_id: "10",
+                        position: 3,
+                        request_id: "10"
+                      },
+                      {
+                        content_id: "5b4a6512326bd9777abfabcf",
+                        user_info: {user_id: "912", log_user_id: "91232"},
+                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
+                        insertion_id: "10",
+                        position: 4,
+                        request_id: "10"
+                      }]
+                    }
                   }],
-                  insertion:
-                  [{
-                    content_id: "5b4a6512326bd9777abfabc34",
-                    user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: "10",
-                    position: 0,
-                    request_id: "10"
-                  },
-                  {
-                    content_id: "5b4a6512326bd9777abfabea",
-                    user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: "10",
-                    position: 1,
-                    request_id: "10"
-                  },
-                  {
-                    content_id: "5b4a6512326bd9777abfabcf",
-                    user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: "10",
-                    position: 2,
-                    request_id: "10"
-                  },
-                  {
-                    content_id: "5b4a6512326bd9777abfabcf",
-                    user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: "10",
-                    position: 3,
-                    request_id: "10"
-                  },
-                  {
-                    content_id: "5b4a6512326bd9777abfabcf",
-                    user_info: {user_id: "912", log_user_id: "91232"},
-                    timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                    insertion_id: "10",
-                    position: 4,
-                    request_id: "10"
-                  }]
                 }
+      # Useful for debugging
+      #puts(prepare_for_logging_obj.to_json)
+      #puts(output.to_json)
       expect( prepare_for_logging_obj == output ).to be_truthy
     end
   end

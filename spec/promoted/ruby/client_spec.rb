@@ -78,16 +78,16 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "should have insertion set" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
-      expect(logging_json[:insertion].length).to eq(input[:full_insertion].length)
-      expect(logging_json[:insertion]).not_to be nil
+      expect(logging_json[:delivery_log][0][:response][:insertion].length).to eq(input[:full_insertion].length)
+      expect(logging_json[:delivery_log][0][:response][:insertion]).not_to be nil
     end
 
     it "should have request_id set since insertions aren't coming from delivery" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
-      expect(logging_json[:request].length).to eq 1
-      expect(logging_json[:request][0][:request_id]).not_to be nil
-      logging_json[:insertion].each do |insertion|
+      expect(logging_json[:delivery_log][0].key?(:request)).to be true
+      expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
+      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
       end
     end
@@ -95,7 +95,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "should have insertion_id set" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
-      logging_json[:insertion].each do |insertion|
+      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
         expect(insertion[:insertion_id]).not_to be nil
       end
     end
@@ -120,8 +120,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "should have insertion set" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)
-      expect(logging_json[:insertion]).not_to be nil
-      expect(logging_json[:insertion].length).to eq(input_with_limit[:request].dig(:paging, :size).to_i)
+      expect(logging_json[:delivery_log][0][:response][:insertion]).not_to be nil
+      expect(logging_json[:delivery_log][0][:response][:insertion].length).to eq(input_with_limit[:request].dig(:paging, :size).to_i)
     end
   end
 
@@ -140,10 +140,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(dup_input)
-      expect(logging_json[:insertion][0].key?(:session_id)).to be true
-      expect(logging_json[:insertion][0][:session_id]).to eq "uuid0"
-      expect(logging_json[:insertion][0].key?(:view_id)).to be true
-      expect(logging_json[:insertion][0][:view_id]).to eq "uuid0"
+      expect(logging_json[:delivery_log][0][:response][:insertion][0].key?(:session_id)).to be true
+      expect(logging_json[:delivery_log][0][:response][:insertion][0][:session_id]).to eq "uuid0"
+      expect(logging_json[:delivery_log][0][:response][:insertion][0].key?(:view_id)).to be true
+      expect(logging_json[:delivery_log][0][:response][:insertion][0][:view_id]).to eq "uuid0"
     end
   end
 
@@ -293,7 +293,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "should take proc from input and delete the property values accordingly" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input_with_prop)
-      logging_json[:insertion].each do |insertion|
+      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
         expect(insertion.key?(:properties)).to be false
       end
     end
@@ -307,9 +307,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect { client.send_log_request(logging_json) }.not_to raise_error
 
       # prepare_for_logging should set request and insertion ids
-      expect(logging_json[:request].length).to eq 1
-      expect(logging_json[:request][0][:request_id]).not_to be nil
-      logging_json[:insertion].each do |insertion|
+      expect(logging_json[:delivery_log][0].key?(:request)).to be true
+      expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
+      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
       end
     end  
@@ -487,7 +487,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).not_to be nil
-      expect(deliver_resp[:client_request_id]).to eq(deliver_resp[:log_request][:request][0][:client_request_id])
+      expect(deliver_resp[:client_request_id]).to eq(deliver_resp[:log_request][:delivery_log][0][:request][:client_request_id])
     end
 
     it "does not deliver for default only_log" do
@@ -500,7 +500,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # No log request generated since there's no experiment and we delivered the request.
       expect(deliver_resp[:log_request]).not_to be nil
-      expect(deliver_resp[:client_request_id]).to eq(deliver_resp[:log_request][:request][0][:client_request_id])
+      expect(deliver_resp[:client_request_id]).to eq(deliver_resp[:log_request][:delivery_log][0][:request][:client_request_id])
     end
 
     it "swallows errors and defaults the insertions" do
@@ -521,7 +521,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(log_request).not_to be nil
 
       # Log request that follows up an unsent delivery request should have the same client request id.
-      expect(log_request[:request][0][:client_request_id]).to eq(delivery_req[:client_request_id])
+      expect(log_request[:delivery_log][0][:request][:client_request_id]).to eq(delivery_req[:client_request_id])
       expect(deliver_resp[:client_request_id]).to eq(delivery_req[:client_request_id])
 
       # Should fill in insertion id
@@ -660,7 +660,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "preempts prepare_for_logging when disabled" do
       client = described_class.new({ :enabled => false })
       logging_json = client.prepare_for_logging(@input)
-      expect(logging_json[:request]).to be nil
+      expect(logging_json[:delivery_log]).to be nil
     end
   end
 
@@ -684,8 +684,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
-      expect(deliver_resp[:log_request].key?(:insertion)).to be true
-      expect(deliver_resp[:log_request].key?(:request)).to be true
+      expect(deliver_resp[:log_request].key?(:delivery_log)).to be true
+      expect(deliver_resp[:log_request][:delivery_log][0].key?(:response)).to be true
+      expect(deliver_resp[:log_request][:delivery_log][0][:response].key?(:insertion)).to be true
+      expect(deliver_resp[:log_request][:delivery_log][0].key?(:request)).to be true
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp[:log_request][:cohort_membership].length).to eq 1
       expect(deliver_resp[:log_request][:cohort_membership][0][:cohort_id]).to eq "HOLD_OUT"
@@ -696,13 +698,13 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # Since we did not deliver, log request should have ids set
       logging_json = deliver_resp[:log_request]
-      expect(logging_json[:request].length).to eq 1
-      expect(logging_json[:request][0][:client_request_id]).not_to be nil
-      expect(logging_json[:request][0][:request_id]).not_to be nil
-      logging_json[:insertion].each do |insertion|
+      expect(logging_json[:delivery_log][0].key?(:request)).to be true
+      expect(logging_json[:delivery_log][0][:request][:client_request_id]).not_to be nil
+      expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
+      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
       end
-      expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
+      expect(deliver_resp[:client_request_id]).to eq(logging_json[:delivery_log][0][:request][:client_request_id])
 
       # The request should be shadow traffic.
       expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
@@ -715,8 +717,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
-      expect(deliver_resp[:log_request].key?(:insertion)).to be true
-      expect(deliver_resp[:log_request].key?(:request)).to be true
+      expect(deliver_resp[:log_request].key?(:delivery_log)).to be true
+      expect(deliver_resp[:log_request][:delivery_log][0].key?(:response)).to be true
+      expect(deliver_resp[:log_request][:delivery_log][0][:response].key?(:insertion)).to be true
+      expect(deliver_resp[:log_request][:delivery_log][0].key?(:request)).to be true
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp[:log_request][:cohort_membership].length).to eq 1
       expect(deliver_resp[:log_request][:cohort_membership][0][:cohort_id]).to eq "HOLD_OUT"
@@ -727,13 +731,13 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # Since we did not deliver, log request should have ids set
       logging_json = deliver_resp[:log_request]
-      expect(logging_json[:request].length).to eq 1
-      expect(logging_json[:request][0][:client_request_id]).not_to be nil
-      expect(logging_json[:request][0][:request_id]).not_to be nil
-      logging_json[:insertion].each do |insertion|
+      expect(logging_json[:delivery_log][0].key?(:request)).to be true
+      expect(logging_json[:delivery_log][0][:request][:client_request_id]).not_to be nil
+      expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
+      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
       end
-      expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
+      expect(deliver_resp[:client_request_id]).to eq(logging_json[:delivery_log][0][:request][:client_request_id])
     end
 
     it "delivers shadow traffic with custom treatment function" do
@@ -754,8 +758,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
-      expect(deliver_resp[:log_request].key?(:insertion)).to be true
-      expect(deliver_resp[:log_request].key?(:request)).to be true
+      expect(deliver_resp[:log_request].key?(:delivery_log)).to be true
+      expect(deliver_resp[:log_request][:delivery_log][0].key?(:response)).to be true
+      expect(deliver_resp[:log_request][:delivery_log][0][:response].key?(:insertion)).to be true
+      expect(deliver_resp[:log_request][:delivery_log][0].key?(:request)).to be true
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp.key?(:insertion)).to be true
       expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
@@ -766,13 +772,13 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # Since we did not deliver, log request should have ids set
       logging_json = deliver_resp[:log_request]
-      expect(logging_json[:request].length).to eq 1
-      expect(logging_json[:request][0][:client_request_id]).not_to be nil
-      expect(logging_json[:request][0][:request_id]).not_to be nil
-      logging_json[:insertion].each do |insertion|
+      expect(logging_json[:delivery_log][0].key?(:request)).to be true
+      expect(logging_json[:delivery_log][0][:request][:client_request_id]).not_to be nil
+      expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
+      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
         expect(insertion[:request_id]).not_to be nil
       end
-      expect(deliver_resp[:client_request_id]).to eq(logging_json[:request][0][:client_request_id])
+      expect(deliver_resp[:client_request_id]).to eq(logging_json[:delivery_log][0][:request][:client_request_id])
  
        # The request should be shadow traffic.
        expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
@@ -857,7 +863,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "should take proc from input and delete the property values accordingly" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input_with_prop)
-      logging_json[:insertion].each do |insertion|
+      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
         expect(insertion[:properties][:struct].key?(:invites_required)).to be false
         expect(insertion[:properties][:struct].key?(:should_discount_addons)).to be false
         expect(insertion[:properties][:struct].key?(:total_uses)).to be false
@@ -868,7 +874,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "should take proc from input but should not delete the property values that are not included in proc" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input_with_prop)
-      logging_json[:insertion].each do |insertion|
+      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
         # some_property_1 is nil so it gets stripped from the compacted insertions.
         expect(insertion[:properties][:struct].key?(:some_property_1)).to be false
 
