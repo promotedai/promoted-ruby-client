@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    promoted-ruby-client (0.1.22)
+    promoted-ruby-client (0.1.23)
       concurrent-ruby (~> 1)
       faraday (>= 0.9.0)
       faraday_middleware (>= 0.9.0)
