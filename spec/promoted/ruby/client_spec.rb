@@ -804,6 +804,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(deliver_resp[:log_request].key?(:cohort_membership)).to be true
       expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['API'])
 
+      # But since we delivered, there should be no delivery log.
+      expect(deliver_resp[:log_request].key?(:delivery_log)).to be false
+      
       expect(deliver_resp.key?(:insertion)).to be true
 
       expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
