@@ -194,6 +194,8 @@ module Promoted
           end
 
           log_req = nil
+          exec_server = (insertions_from_delivery ? Promoted::Ruby::Client::EXECUTION_SERVER['API'] : Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
+          
           # We only return a log request if there's a request or cohort to log.
           if request_to_log || cohort_membership_to_log
             log_request_builder = RequestBuilder.new
@@ -212,14 +214,14 @@ module Promoted
             # On a successful delivery request, we don't log the insertions
             # or the request since they are logged on the server-side.
             log_req = log_request_builder.log_request_params(
-              include_insertions: !insertions_from_delivery, 
-              include_request: !insertions_from_delivery)
+              include_delivery_log: !insertions_from_delivery, 
+              exec_server: exec_server)
           end
 
           client_response = {
             insertion: response_insertions,
             log_request: log_req,
-            execution_server: insertions_from_delivery ? Promoted::Ruby::Client::EXECUTION_SERVER['API'] : Promoted::Ruby::Client::EXECUTION_SERVER['SDK'],
+            execution_server: exec_server,
             client_request_id: delivery_request_builder.client_request_id
           }
           return client_response
@@ -258,7 +260,9 @@ module Promoted
             deliver_shadow_traffic args, headers
           end
 
-          log_request_builder.log_request_params
+          log_request_builder.log_request_params(
+            include_delivery_log: true, 
+            exec_server: Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
         end
 
         ##

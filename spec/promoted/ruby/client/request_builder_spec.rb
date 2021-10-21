@@ -87,7 +87,9 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
     it "should return expected logging object" do
       request_builder = subject.class.new({:id_generator => FakeIdGenerator.new })
       request_builder.set_request_params(input)
-      prepare_for_logging_obj = request_builder.log_request_params
+      prepare_for_logging_obj = request_builder.log_request_params(
+        include_delivery_log: true, 
+        exec_server: Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
       output = {
                   user_info:
                   {

@@ -100,17 +100,12 @@ module Promoted
           filled_in_copy
         end
 
-        def log_request_params(include_insertions: true, include_request: true)
+        def log_request_params(include_delivery_log:, exec_server:)
           params = {
             user_info: user_info,
             timing: timing,
             client_info: merge_client_info_defaults,
             device: @device,
-            delivery_log: [{
-              execution: {
-                execution_server: Promoted::Ruby::Client::EXECUTION_SERVER['SDK']
-              }
-            }]
           }
 
           if @experiment
@@ -118,17 +113,19 @@ module Promoted
           end
 
           # Log request allows for multiple requests but here we only send one.
-          if include_request
+          if include_delivery_log
             request[:request_id] = request[:request_id] || @id_generator.newID
-            # Set request on delivery log.
-            params[:delivery_log][0][:request] = request
-          end
 
-          if include_insertions
-            # Add a response containing compacted insertions to delivery log.
-            params[:delivery_log][0][:response] = {
-              insertion: compact_metrics_properties
-            }
+            params[:delivery_log] = [{
+              execution: {
+                execution_server: exec_server
+              },
+              request: request,
+              response: {
+                insertion: insertions_with_compact_metrics_properties
+              }
+            }]
+
             add_missing_ids_on_insertions! request, params[:delivery_log][0][:response][:insertion]
           end
           
@@ -170,7 +167,7 @@ module Promoted
         end
 
         # TODO: This looks overly complicated.
-        def compact_metrics_properties
+        def insertions_with_compact_metrics_properties
           @insertion            = [] # insertion should be set according to the compact insertion
           paging                = request[:paging] || {}
           size                  = paging[:size] ? paging[:size].to_i : 0
