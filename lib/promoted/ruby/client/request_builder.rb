@@ -100,7 +100,7 @@ module Promoted
           filled_in_copy
         end
 
-        def log_request_params(include_delivery_log: true, exec_server: Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
+        def log_request_params(include_delivery_log:, exec_server:)
           params = {
             user_info: user_info,
             timing: timing,

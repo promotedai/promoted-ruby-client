@@ -260,7 +260,9 @@ module Promoted
             deliver_shadow_traffic args, headers
           end
 
-          log_request_builder.log_request_params
+          log_request_builder.log_request_params(
+            include_delivery_log: true, 
+            exec_server: Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
         end
 
         ##
