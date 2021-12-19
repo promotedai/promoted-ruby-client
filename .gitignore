@@ -58,6 +58,7 @@ build-iPhoneSimulator/
 
 # IDE
 .vscode/
+.history/
 
 # Dev
 dev/
