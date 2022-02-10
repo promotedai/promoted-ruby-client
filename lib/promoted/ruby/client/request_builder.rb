@@ -29,7 +29,7 @@ module Promoted
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || Promoted::Ruby::Client::USE_CASES['UNKNOWN_USE_CASE']
           @full_insertion          = args[:full_insertion]
           @user_info               = request[:user_info] || { :user_id => nil, :log_user_id => nil}
-          @timing                  = request[:timing] || { :client_log_timestamp => Time.now.to_i }
+          @timing                  = request[:timing] || { :client_log_timestamp => (Time.now.to_f * 1000).to_i }
           @to_compact_metrics_properties_func       = args[:to_compact_metrics_properties_func]
           @to_compact_delivery_properties_func      = args[:to_compact_delivery_properties_func]
 
@@ -162,7 +162,7 @@ module Promoted
 
         def ensure_client_timestamp
           if timing[:client_log_timestamp].nil?
-            timing[:client_log_timestamp] = Time.now.to_i
+            timing[:client_log_timestamp] = (Time.now.to_f * 1000).to_i
           end
         end
 
