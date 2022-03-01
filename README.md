@@ -54,6 +54,7 @@ Name | Type | Description
 ```:default_only_log``` | Boolean | If true, the ```deliver``` method will not direct traffic to Delivery API but rather return a request suitable for logging. Defaults to false.
 ```:should_apply_treatment_func``` | Proc | Called during delivery, accepts an experiment and returns a Boolean indicating whether the request should be considered part of the control group (false) or in the experiment (true). If nil, the default behavior of checking the experiement ```:arm``` is applied.
 ```:warmup``` | Boolean | If true, the client will prime the `Net::HTTP::Persistent` connection pool on construction; this can make the first few calls to Promoted complete faster. Defaults to false.
+```:max_request_insertions``` | Number | Maximum number of request insertions that will be passed to Delivery API on a single request (any more will be truncated by the SDK). Defaults to 1000.  
 
 ## Data Types
 
