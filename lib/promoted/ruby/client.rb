@@ -8,6 +8,7 @@ module Promoted
 
       DEFAULT_DELIVERY_TIMEOUT_MILLIS = 250
       DEFAULT_METRICS_TIMEOUT_MILLIS = 3000
+      DEFAULT_MAX_REQUEST_INSERTIONS = 1000
       DEFAULT_DELIVERY_ENDPOINT = "http://delivery.example.com"
       DEFAULT_METRICS_ENDPOINT = "http://metrics.example.com"
 
@@ -20,7 +21,7 @@ module Promoted
 
         attr_reader :perform_checks, :default_only_log, :delivery_timeout_millis, :metrics_timeout_millis, :should_apply_treatment_func,
                     :default_request_headers, :http_client, :logger, :shadow_traffic_delivery_percent, :async_shadow_traffic,
-                    :send_shadow_traffic_for_control
+                    :send_shadow_traffic_for_control, :max_request_insertions
                     
         attr_accessor :request_logging_on, :enabled
         
@@ -84,6 +85,8 @@ module Promoted
           if params[:send_shadow_traffic_for_control] != nil
             @send_shadow_traffic_for_control = params[:send_shadow_traffic_for_control] || false
           end
+
+          @max_request_insertions = params[:max_request_insertions] || DEFAULT_MAX_REQUEST_INSERTIONS
 
           @pool = nil
           if @async_shadow_traffic
@@ -151,6 +154,12 @@ module Promoted
 
           only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
           deliver_err = false
+
+          # Trim any request insertions over the maximum allowed.
+          if delivery_request_builder.full_insertion.length > @max_request_insertions then
+            @logger.warn("Exceeded max request insertions, trimming") if @logger
+            delivery_request_builder.full_insertion = delivery_request_builder.full_insertion[0, @max_request_insertions]
+          end
 
           begin
             @pager.validate_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])

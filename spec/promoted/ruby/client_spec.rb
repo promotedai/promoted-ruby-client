@@ -422,8 +422,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
-      expect(delivery_req.key?(:client_info)).to be true
-      expect(delivery_req.key?(:device)).to be true
       expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['API'])
       expect(deliver_resp[:client_request_id]).to eq(delivery_req[:client_request_id])
 
@@ -440,8 +438,31 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         expect(insertion[:properties][:struct].key?(:product)).to be true
       end
 
+      expect(delivery_req.key?(:client_info)).to be true
+      expect(delivery_req.key?(:device)).to be true
       expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
       expect(delivery_req[:client_info][:client_type]).to be Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER']
+      expect(delivery_req[:insertion].length).to eq full_insertion.length
+    end
+
+    it "delivers respecting max request insertions" do
+      client = described_class.new({ :max_request_insertions => 2 })
+      full_insertion = @input[:fullInsertion]
+      
+      delivery_req = nil
+      allow(client).to receive(:send_request) { |value|
+        delivery_req = value
+        { :insertion => full_insertion.slice(0, 2) }
+      }
+
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+
+      # Validate the call occurred
+      expect(delivery_req).not_to be nil
+
+      # Key assertion is:
+      expect(delivery_req[:insertion].length).to eq 2
     end
 
     it "delivers with empty insertions, which is not an error" do

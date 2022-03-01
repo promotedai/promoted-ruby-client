@@ -4,9 +4,9 @@ module Promoted
       class RequestBuilder
         attr_reader   :session_id, :only_log, :experiment, :client_info, :device,
                       :view_id, :insertion, :to_compact_delivery_properties_func,
-                      :request_id, :full_insertion, :use_case, :request, :to_compact_metrics_properties_func
+                      :request_id, :use_case, :request, :to_compact_metrics_properties_func
 
-        attr_accessor :timing, :user_info, :platform_id
+        attr_accessor :timing, :user_info, :platform_id, :full_insertion
 
         def initialize args = {}
           if args[:id_generator]
