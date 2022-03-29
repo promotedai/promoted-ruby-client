@@ -395,6 +395,7 @@ module Promoted
           begin
             @validator.check_that_log_ids_not_set!(req)
             @validator.validate_metrics_request!(req)
+            @validator.check_that_content_ids_are_set!(req)
           rescue StandardError => err
             @logger.error(err) if @logger
             raise

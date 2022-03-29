@@ -270,6 +270,25 @@ RSpec.describe Promoted::Ruby::Client::Validator do
             expect { @v.check_that_log_ids_not_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /Set full_insertion/)
         end
     end
+
+
+    context "check content ids are set" do
+      it "should not raise any errors" do
+          expect { @v.check_that_content_ids_are_set!(input) }.not_to raise_error
+      end
+  
+      it "should raise error for a blank insertion content id" do
+          dup_input = Marshal.load(Marshal.dump(input))
+          dup_input[:full_insertion].first[:content_id] = ""
+          expect { @v.check_that_content_ids_are_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /Insertion.contentId should be set/)
+      end
+  
+      it "should raise error for a missing insertion content id" do
+          dup_input = Marshal.load(Marshal.dump(input))
+          dup_input[:full_insertion].first.delete(:content_id)
+          expect { @v.check_that_content_ids_are_set!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /Insertion.contentId should be set/)
+      end
+  end
 end
 
 require "promoted/ruby/client/util"
