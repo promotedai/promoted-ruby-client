@@ -82,6 +82,13 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(logging_json[:delivery_log][0][:response][:insertion]).not_to be nil
     end
 
+    it "sets execution properties" do
+      client = described_class.new ENDPOINTS
+      logging_json = client.prepare_for_logging(input)
+      expect(logging_json[:delivery_log][0][:execution][:server_version]).to eq(Promoted::Ruby::Client::SERVER_VERSION)
+      expect(logging_json[:delivery_log][0][:execution][:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
+    end
+
     it "should have request_id set since insertions aren't coming from delivery" do
       client = described_class.new ENDPOINTS
       logging_json = client.prepare_for_logging(input)

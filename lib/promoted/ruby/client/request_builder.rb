@@ -118,7 +118,8 @@ module Promoted
 
             params[:delivery_log] = [{
               execution: {
-                execution_server: exec_server
+                execution_server: exec_server,
+                server_version: Promoted::Ruby::Client::SERVER_VERSION
               },
               request: request,
               response: {

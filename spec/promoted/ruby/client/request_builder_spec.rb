@@ -133,7 +133,8 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                       client_request_id: "10"
                     },
                     execution: {
-                      execution_server: "SDK"
+                      execution_server: "SDK",
+                      server_version: "rb." + Promoted::Ruby::Client::VERSION
                     },
                     response: {
                       insertion:
