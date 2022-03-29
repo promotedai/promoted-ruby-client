@@ -153,6 +153,7 @@ Field Name | Type | Optional? | Description
 ```:user_agent``` | String | Yes | Browser user agent string
 ```:viewport_size``` | Size | Yes | Size of the browser viewport
 ```:client_hints``` | ClientHints | Yes | HTTP client hints structure
+```referrer``` | String | Yes | Request referrer
 ---
 ### Device
 Information about the user's device.

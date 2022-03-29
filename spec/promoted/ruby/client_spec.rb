@@ -41,6 +41,13 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
     end
 
+    it "passes the request through the validator when perform checks no content id" do
+      dup_input = Marshal.load(Marshal.dump(input))
+      dup_input[:full_insertion].first[:content_id] = ""
+      client = described_class.new(ENDPOINTS.merge( { :logger => nil }))
+      expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /contentId/)
+    end
+
     it "does not pass the request through the validator when no perform checks" do
       dup_input = Marshal.load(Marshal.dump(input))
       dup_input.delete :request
@@ -361,6 +368,15 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
       end
   
+      it "passes the request through the validator when perform checks no content id" do
+        dup_input = Marshal.load(Marshal.dump(@input))
+        puts dup_input.to_s
+        dup_input[:fullInsertion].first[:content_id] = ""
+        client = described_class.new
+        expect(client.perform_checks).to be true
+        expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /contentId/)
+      end
+
       it "enforces unpaged insertions when perform checks" do
         dup_input = Marshal.load(Marshal.dump(@input))
         dup_input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']

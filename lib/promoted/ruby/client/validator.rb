@@ -148,6 +148,12 @@ module Promoted
                 end
             end
             
+            def check_that_content_ids_are_set! req
+              req[:full_insertion].each do |insertion_hash|
+                raise ValidationError.new("Insertion.contentId should be set") if !insertion_hash[:content_id] || insertion_hash[:content_id].empty?
+              end
+            end
+
             private
 
             def validate_fields!(obj, obj_name, fields)
