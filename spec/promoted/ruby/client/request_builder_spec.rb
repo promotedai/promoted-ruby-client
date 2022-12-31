@@ -9,7 +9,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
       request_builder = subject.class.new
       request_builder.set_request_params(input)
       expect(request_builder.request).to eq(input[:request])
-      expect(request_builder.full_insertion).to eq(input[:full_insertion])
+      expect(request_builder.insertion).to eq(input[:request][:insertion])
     end
   end
 
@@ -64,7 +64,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
 
       expect(output.key?(:user_info)).to be true
       expect(output[:insertion].length).to be > 0
-      expect(output[:insertion].length).to eq input[:full_insertion].length
+      expect(output[:insertion].length).to eq input[:request][:insertion].length
       expect(output[:client_request_id]).to eq "10"
 
       # Delivery request should not fill in insertion ids.
@@ -95,14 +95,14 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                   {
                     user_id: "912", log_user_id: "91232"
                   },
-                  client_info:
-                  {
-                    traffic_type: "PRODUCTION",
-                    client_type: "PLATFORM_SERVER"
-                  },
                   timing:
                   {
                     client_log_timestamp: request_builder.timing[:client_log_timestamp]
+                  },
+                  client_info:
+                  {
+                    client_type: "PLATFORM_SERVER",
+                    traffic_type: "PRODUCTION"
                   },
                   device: {
                     device_type: "DESKTOP",
@@ -112,9 +112,12 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                     }
                   },
                   delivery_log: [{
+                    execution: {
+                      execution_server: "SDK",
+                      server_version: "rb." + Promoted::Ruby::Client::VERSION
+                    },
                     request: {
                       :user_info=> {:user_id=>"912", :log_user_id=>"91232"},
-                      :use_case=>"FEED",
                       device: {
                         device_type: "DESKTOP",
                         ip_address: "127.0.0.1",
@@ -122,6 +125,7 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                             user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
                         }
                       },  
+                      :use_case=>"FEED",
                       :properties=>
                       {
                         :struct=>
@@ -129,54 +133,61 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                           :query => {}
                         }
                       },
+                      client_request_id: "10",
                       request_id: "10",
-                      client_request_id: "10"
-                    },
-                    execution: {
-                      execution_server: "SDK",
-                      server_version: "rb." + Promoted::Ruby::Client::VERSION
+                      insertion:
+                      [{
+                        content_id: "5b4a6512326bd9777abfabc34",
+                        # TODO - this looks broken.
+                        properties: []
+                      },
+                      {
+                        content_id: "5b4a6512326bd9777abfabea",
+                        # TODO - this looks broken.
+                        properties: []
+                      },
+                      {
+                        content_id: "5b4a6512326bd9777abfabcf",
+                        # TODO - this looks broken.
+                        properties: []
+                      },
+                      {
+                        content_id: "5b4a6512326bd9777abfabcf",
+                        # TODO - this looks broken.
+                        properties: []
+                      },
+                      {
+                        content_id: "5b4a6512326bd9777abfabcf",
+                        # TODO - this looks broken.
+                        properties: []
+                      }]
                     },
                     response: {
                       insertion:
                       [{
                         content_id: "5b4a6512326bd9777abfabc34",
-                        user_info: {user_id: "912", log_user_id: "91232"},
-                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                        insertion_id: "10",
                         position: 0,
-                        request_id: "10"
+                        insertion_id: "10"
                       },
                       {
                         content_id: "5b4a6512326bd9777abfabea",
-                        user_info: {user_id: "912", log_user_id: "91232"},
-                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                        insertion_id: "10",
                         position: 1,
-                        request_id: "10"
+                        insertion_id: "10"
                       },
                       {
                         content_id: "5b4a6512326bd9777abfabcf",
-                        user_info: {user_id: "912", log_user_id: "91232"},
-                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                        insertion_id: "10",
                         position: 2,
-                        request_id: "10"
+                        insertion_id: "10",
                       },
                       {
                         content_id: "5b4a6512326bd9777abfabcf",
-                        user_info: {user_id: "912", log_user_id: "91232"},
-                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                        insertion_id: "10",
                         position: 3,
-                        request_id: "10"
+                        insertion_id: "10"
                       },
                       {
                         content_id: "5b4a6512326bd9777abfabcf",
-                        user_info: {user_id: "912", log_user_id: "91232"},
-                        timing: {client_log_timestamp: request_builder.timing[:client_log_timestamp]},
-                        insertion_id: "10",
                         position: 4,
-                        request_id: "10"
+                        insertion_id: "10"
                       }]
                     }
                   }],

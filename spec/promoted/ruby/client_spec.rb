@@ -32,328 +32,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         to raise_error(ArgumentError, /shadow_traffic_delivery_percent/)
     end
   end
-
-  context "validation on prepare" do
-    it "passes the request through the validator when perform checks" do
-      dup_input = Marshal.load(Marshal.dump(input))
-      dup_input.delete :request
-      client = described_class.new(ENDPOINTS.merge( { :logger => nil }))
-      expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
-    end
-
-    it "passes the request through the validator when perform checks no content id" do
-      dup_input = Marshal.load(Marshal.dump(input))
-      dup_input[:full_insertion].first[:content_id] = ""
-      client = described_class.new(ENDPOINTS.merge( { :logger => nil }))
-      expect { client.prepare_for_logging(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /contentId/)
-    end
-
-    it "does not pass the request through the validator when no perform checks" do
-      dup_input = Marshal.load(Marshal.dump(input))
-      dup_input.delete :request
-      client = described_class.new(ENDPOINTS.merge( { :perform_checks => false, :logger => nil }))
-      expect { client.prepare_for_logging(dup_input) }.not_to raise_error
-    end
-  end
-
-  context "prepare_for_logging when no limit is set" do
-    it "has user_info set" do
-      client = described_class.new(ENDPOINTS)
-      logging_json = client.prepare_for_logging(input)
-      expect(logging_json[:user_info]).not_to be nil
-      expect(logging_json[:user_info][:user_id]).to eq(input.dig(:request, :user_info, :user_id))
-      expect(logging_json[:user_info][:log_user_id]).to eq(input.dig(:request, :user_info, :log_user_id))
-    end
-
-    it "should not have full_insertion" do
-      client = described_class.new(ENDPOINTS)
-      logging_json = client.prepare_for_logging(input)
-      expect(logging_json[:full_insertion]).to be nil
-    end
-
-    it "can deal with empty insertions" do
-      dup_input = Hash[input]
-      dup_input[:full_insertion] = []
-
-      client = described_class.new(ENDPOINTS)
-      logging_json = client.prepare_for_logging(dup_input)
-
-      # No need to log empty assertions so we nil it out.
-      expect(logging_json[:full_insertion]).to be nil
-    end
-
-    it "should have insertion set" do
-      client = described_class.new ENDPOINTS
-      logging_json = client.prepare_for_logging(input)
-      expect(logging_json[:delivery_log][0][:response][:insertion].length).to eq(input[:full_insertion].length)
-      expect(logging_json[:delivery_log][0][:response][:insertion]).not_to be nil
-    end
-
-    it "sets execution properties" do
-      client = described_class.new ENDPOINTS
-      logging_json = client.prepare_for_logging(input)
-      expect(logging_json[:delivery_log][0][:execution][:server_version]).to eq(Promoted::Ruby::Client::SERVER_VERSION)
-      expect(logging_json[:delivery_log][0][:execution][:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
-    end
-
-    it "should have request_id set since insertions aren't coming from delivery" do
-      client = described_class.new ENDPOINTS
-      logging_json = client.prepare_for_logging(input)
-      expect(logging_json[:delivery_log][0].key?(:request)).to be true
-      expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
-      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
-        expect(insertion[:request_id]).not_to be nil
-      end
-    end
-
-    it "should have insertion_id set" do
-      client = described_class.new ENDPOINTS
-      logging_json = client.prepare_for_logging(input)
-      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
-        expect(insertion[:insertion_id]).not_to be nil
-      end
-    end
-
-    # Exists for trying out Async HTTP in debugging
-    # it "will send a 'real' request" do
-    #   client = described_class.new({:delivery_endpoint => "https://httpbin.org/anything", :metrics_endpoint => "https://httpbin.org/anything" })
-    #   logging_json = client.prepare_for_logging(input)
-    #   resp = client.send_log_request logging_json
-    #   expect(resp).not_to be nil
-    #   client.close
-    # end
-  end
-
-  context "prepare_for_logging when no limit is set" do
-    let!(:input_with_limit) do
-      dup_input                      = Hash[input]
-      request                        = dup_input[:request]
-      request[:paging]               = { size: 2, offset: 0 }
-      dup_input
-    end
-    it "should have insertion set" do
-      client = described_class.new ENDPOINTS
-      logging_json = client.prepare_for_logging(input)
-      expect(logging_json[:delivery_log][0][:response][:insertion]).not_to be nil
-      expect(logging_json[:delivery_log][0][:response][:insertion].length).to eq(input_with_limit[:request].dig(:paging, :size).to_i)
-    end
-  end
-
-  context "extra fields at the top level on insertions" do
-    let!(:input_with_prop) do
-      input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop
-    end
-
-    it "passes along extra fields on the insertions" do
-      dup_input                       = Hash[input_with_prop]
-      dup_input[:full_insertion].each_with_index do |insertion, idx|
-        insertion[:session_id] = "uuid" + idx.to_s
-        insertion[:view_id] = "uuid" + idx.to_s
-      end
-
-      client = described_class.new ENDPOINTS
-      logging_json = client.prepare_for_logging(dup_input)
-      expect(logging_json[:delivery_log][0][:response][:insertion][0].key?(:session_id)).to be true
-      expect(logging_json[:delivery_log][0][:response][:insertion][0][:session_id]).to eq "uuid0"
-      expect(logging_json[:delivery_log][0][:response][:insertion][0].key?(:view_id)).to be true
-      expect(logging_json[:delivery_log][0][:response][:insertion][0][:view_id]).to eq "uuid0"
-    end
-  end
-
-  context "shadow traffic" do
-    let!(:input_with_unpaged) do
-      input_with_unpaged = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_unpaged[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
-      input_with_unpaged
-    end
-
-    it "does not throw if shadow traffic is on and request is prepaged" do
-      dup_input                       = Hash[input]
-      dup_input["insertion_page_type"] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
-
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
-      expect(client).not_to receive(:send_request)
-      expect { client.prepare_for_logging(dup_input) }.not_to raise_error
-    end
-
-    it "does not throw if shadow traffic is on and request paging type is undefined" do
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
-      expect(client).not_to receive(:send_request)
-      expect { client.prepare_for_logging(input) }.not_to raise_error
-    end
-
-    it "paging type is not checked when perform checks is off" do
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :perform_checks => false }))
-      expect(client).to receive(:send_request)
-      expect { client.prepare_for_logging(input) }.not_to raise_error
-      client.close
-    end
-
-    it "does not throw for invalid paging" do
-      input_with_unpaged[:request] = Hash[input_with_unpaged[:request]]
-      input_with_unpaged[:request][:paging] = { size: 2, offset: 1000 }
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
-      expect(client).not_to receive(:send_request)
-      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-    end
-
-    it "samples in" do
-      srand(0)
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.6 }))
-      expect(client).to receive(:send_request)
-      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-      client.close
-    end
-
-    it "samples out" do
-      srand(0)
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
-      expect(client).not_to receive(:send_request)
-      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-    end
-
-    it "works in a normal case" do
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
-      expect(client.async_shadow_traffic).to be true
-
-      delivery_req = nil
-      expect(client).to receive(:send_request) {|value|
-        delivery_req = value
-      }
-
-      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-      client.close
-
-      expect(delivery_req.key?(:insertion)).to be true
-      expect(delivery_req[:insertion].length()).to be 5
-      expect(delivery_req.key?(:timing)).to be true
-      expect(delivery_req.key?(:client_info)).to be true
-      expect(delivery_req.key?(:device)).to be true
-      expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
-      expect(delivery_req[:client_info][:client_type]).to be Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER']
-      expect(delivery_req.key?(:user_info)).to be true
-      expect(delivery_req.key?(:use_case)).to be true
-      expect(delivery_req.key?(:properties)).to be true
-
-      # Requests sent to delivery do not have request ids set.
-      expect(delivery_req.key?(:request_id)).to be false
-    end
-        
-    it "sends synchronous shadow traffic" do
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :async_shadow_traffic => false }))
-      expect(client.async_shadow_traffic).to be false
-
-      delivery_req = nil
-      expect(client).to receive(:send_request) {|value|
-        delivery_req = value
-      }
-      # no client.close call, which would wait on the thread pool -- the thread pool should not be created in this test case.
-
-      logging_json = nil
-      expect { logging_json = client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-      expect(logging_json).not_to be nil
-
-      expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
-    end
-        
-    it "does not raise on error in synchronous shadow traffic" do
-      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :async_shadow_traffic => false }))
-      expect(client.async_shadow_traffic).to be false
-
-      expect(client).to receive(:send_request).and_raise(StandardError)
-
-      # no client.close call, which would wait on the thread pool -- the thread pool should not be created in this test case.
-
-      logging_json = nil
-      expect { logging_json = client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-      expect(logging_json).not_to be nil
-    end
-        
-    it "passes the endpoint, timeout, and api key" do
-      client = described_class.new(ENDPOINTS.merge( { :shadow_traffic_delivery_percent => 1.0, :delivery_api_key => "my api key", :delivery_timeout_millis => 777 } ))
-      recv_headers = nil
-      recv_endpoint = nil
-      recv_timeout = nil
-      allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
-        recv_endpoint = endpoint
-        recv_headers = headers
-        recv_timeout = timeout
-      }
-      expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-      client.close
-
-      expect(recv_endpoint).to eq(ENDPOINTS[:delivery_endpoint])
-      expect(recv_headers.key?("x-api-key")).to be true
-      expect(recv_headers["x-api-key"]).to eq("my api key")
-      expect(recv_timeout).to eq(777)
-    end  
-    
-    # Exists for trying out Async HTTP in debugging
-    # it "will send a 'real' request" do
-    #   client = described_class.new({:shadow_traffic_delivery_percent => 1.0, :delivery_endpoint => "https://httpbin.org/anything", :metrics_endpoint => "https://httpbin.org/anything" })
-    #   expect { client.prepare_for_logging(input_with_unpaged) }.not_to raise_error
-    #   client.close
-    # end
-  end
-
-  context "copy and remove properties compact func" do
-    let!(:input_with_prop) do
-      input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop[:to_compact_metrics_properties_func] = described_class.remove_all_properties
-      input_with_prop
-    end
-
-    it "should take proc from input and delete the property values accordingly" do
-      client = described_class.new ENDPOINTS
-      logging_json = client.prepare_for_logging(input_with_prop)
-      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
-        expect(insertion.key?(:properties)).to be false
-      end
-    end
-  end
-
-  context "log request" do
-    it "works in a good case" do
-      client = described_class.new
-      expect(client).to receive(:send_request)
-      logging_json = client.prepare_for_logging(input)
-      expect { client.send_log_request(logging_json) }.not_to raise_error
-
-      # prepare_for_logging should set request and insertion ids
-      expect(logging_json[:delivery_log][0].key?(:request)).to be true
-      expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
-      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
-        expect(insertion[:request_id]).not_to be nil
-      end
-    end  
-
-    it "swallows errors" do
-      client = described_class.new
-      expect(client).to receive(:send_request).and_raise(StandardError)
-      logging_json = client.prepare_for_logging(input)
-      expect { client.send_log_request(logging_json) }.not_to raise_error
-    end  
-
-    it "passes the endpoint, timeout, and api key" do
-      client = described_class.new(ENDPOINTS.merge( { :metrics_api_key => "my api key", :metrics_timeout_millis => 777 } ))
-      recv_headers = nil
-      recv_endpoint = nil
-      recv_timeout = nil
-      allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
-        recv_endpoint = endpoint
-        recv_headers = headers
-        recv_timeout = timeout
-      }
-      logging_json = client.prepare_for_logging(input)
-      expect { client.send_log_request(logging_json) }.not_to raise_error
-      expect(recv_endpoint).to eq(ENDPOINTS[:metrics_endpoint])
-      expect(recv_headers.key?("x-api-key")).to be true
-      expect(recv_headers["x-api-key"]).to eq("my api key")
-      expect(recv_timeout).to eq(777)
-    end  
-  end
-
+  
   context "deliver" do
     before(:example) do
       @input = Marshal.load(Marshal.dump(SAMPLE_INPUT_CAMEL))
@@ -365,13 +44,13 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         dup_input.delete :request
         client = described_class.new
         expect(client.perform_checks).to be true
-        expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
+        expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /Request/)
       end
   
       it "passes the request through the validator when perform checks no content id" do
         dup_input = Marshal.load(Marshal.dump(@input))
-        puts dup_input.to_s
-        dup_input[:fullInsertion].first[:content_id] = ""
+        # puts dup_input.to_s
+        dup_input[:request][:insertion].first[:content_id] = ""
         client = described_class.new
         expect(client.perform_checks).to be true
         expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /contentId/)
@@ -417,7 +96,337 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         expect { client.deliver(dup_input) }.not_to raise_error
       end
     end
-    
+
+    context "only_log=true" do
+      let!(:input_with_only_log) do
+        input_with_only_log = Hash[input]
+        input_with_only_log[:only_log] = true
+        input_with_only_log
+      end
+
+      context "log_request without limit" do
+        it "has user_info set" do
+          client = described_class.new(ENDPOINTS)
+          response = client.deliver(input_with_only_log)
+          logging_json = response[:log_request]
+          expect(logging_json[:user_info]).not_to be nil
+          expect(logging_json[:user_info][:user_id]).to eq(input.dig(:request, :user_info, :user_id))
+          expect(logging_json[:user_info][:log_user_id]).to eq(input.dig(:request, :user_info, :log_user_id))
+        end
+
+        it "should have insertion" do
+          client = described_class.new(ENDPOINTS)
+          response = client.deliver(input_with_only_log)
+          logging_json = response[:log_request]
+          expect(logging_json[:delivery_log][0][:request][:insertion]).to_not be nil
+        end
+
+        # TODO - double check this.
+        it "can deal with empty insertions" do
+          dup_input = Hash[input_with_only_log]
+          dup_input[:request] = Hash[dup_input[:request]]
+          dup_input[:request][:insertion] = []
+
+          client = described_class.new(ENDPOINTS)
+          response = client.deliver(dup_input)
+          logging_json = response[:log_request]
+
+          # No need to log empty assertions so we nil it out.
+          expect(logging_json[:delivery_log][0][:request][:insertion]).to be_empty
+        end
+
+        it "should have insertion set" do
+          client = described_class.new ENDPOINTS
+          response = client.deliver(input_with_only_log)
+          logging_json = response[:log_request]
+          expect(logging_json[:delivery_log][0][:response][:insertion]).not_to be nil
+          expect(logging_json[:delivery_log][0][:response][:insertion].length).to eq(input[:request][:insertion].length)
+        end
+
+        it "sets execution properties" do
+          client = described_class.new ENDPOINTS
+          response = client.deliver(input_with_only_log)
+          logging_json = response[:log_request]
+          expect(logging_json[:delivery_log][0][:execution][:server_version]).to eq(Promoted::Ruby::Client::SERVER_VERSION)
+          expect(logging_json[:delivery_log][0][:execution][:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
+        end
+
+        it "should have request_id set since insertions aren't coming from delivery" do
+          client = described_class.new ENDPOINTS
+          response = client.deliver(input_with_only_log)
+          logging_json = response[:log_request]
+          expect(logging_json[:delivery_log][0].key?(:request)).to be true
+          expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
+          logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
+            expect(insertion[:request_id]).to be nil
+          end
+        end
+
+        it "should have insertion_id set" do
+          client = described_class.new ENDPOINTS
+          response = client.deliver(input_with_only_log)
+          logging_json = response[:log_request]
+          logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
+            expect(insertion[:insertion_id]).not_to be nil
+          end
+        end
+
+        # Exists for trying out Async HTTP in debugging
+        # it "will send a 'real' request" do
+        #   client = described_class.new({:delivery_endpoint => "https://httpbin.org/anything", :metrics_endpoint => "https://httpbin.org/anything" })
+        #   response = client.deliver(input)
+        #   logging_json = response[:log_request]
+        #   resp = client.send_log_request logging_json
+        #   expect(resp).not_to be nil
+        #   client.close
+        # end
+      end
+
+      context "log_request with limit" do
+        let!(:input_with_limit) do
+          dup_input            = Hash[input]
+          dup_input[:only_log] = true
+          request              = Hash[dup_input[:request]]
+          request[:paging]     = { size: 2, offset: 0 }
+          dup_input[:request]  = request
+          dup_input
+        end
+
+        it "should have insertion set" do
+          client = described_class.new ENDPOINTS
+          response = client.deliver(input_with_limit)
+          logging_json = response[:log_request]
+          expect(logging_json).not_to eq(nil)
+          expect(logging_json[:delivery_log].length()).to eq(1)
+          expect(logging_json[:delivery_log][0][:request][:paging][:size]).to eq(2)
+          expect(logging_json[:delivery_log][0][:response][:insertion]).not_to be_empty
+          expect(logging_json[:delivery_log][0][:response][:insertion].length).to eq(input_with_limit[:request].dig(:paging, :size).to_i)
+        end
+      end
+
+      context "extra fields at the top level on insertions" do
+        let!(:input_with_prop) do
+          input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
+          input_with_prop[:only_log] = true
+          input_with_prop
+        end
+
+        it "do not pass extra fields onto insertions" do
+          dup_input   = Hash[input_with_prop]
+          dup_request = Hash[dup_input[:request]]
+          dup_input[:request] = dup_request
+          dup_insertions = []
+          dup_request[:insertion].each_with_index do |insertion, idx|
+            dup_insertion = Hash[insertion]
+            dup_insertion[:session_id] = "uuid" + idx.to_s
+            dup_insertion[:view_id] = "uuid" + idx.to_s
+            dup_insertions << dup_insertion
+          end
+          dup_request[:insertion] = dup_insertions
+
+          client = described_class.new ENDPOINTS
+          response = client.deliver(dup_input)
+          logging_json = response[:log_request]
+          expect(logging_json[:delivery_log][0][:request][:insertion][0].key?(:session_id)).to be true
+          expect(logging_json[:delivery_log][0][:response][:insertion][0].key?(:session_id)).to be false
+          expect(logging_json[:delivery_log][0][:request][:insertion][0].key?(:view_id)).to be true
+          expect(logging_json[:delivery_log][0][:response][:insertion][0].key?(:view_id)).to be false
+        end
+      end
+
+      context "shadow traffic" do
+        let!(:dup_input) do
+          dup_input            = Hash[input]
+          dup_input[:only_log] = true
+          dup_input
+        end
+
+        let!(:input_with_unpaged) do
+          input_with_unpaged = Hash[SAMPLE_INPUT_WITH_PROP]
+          input_with_unpaged[:only_log] = true
+          input_with_unpaged[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
+          input_with_unpaged
+        end
+
+        it "does not throw if shadow traffic is on and request is prepaged" do
+          dup_input            = Hash[input]
+          dup_input[:only_log] = true
+          dup_input["insertion_page_type"] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
+
+          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
+          expect(client).not_to receive(:send_request)
+          expect { client.deliver(dup_input) }.not_to raise_error
+        end
+
+        it "does not throw if shadow traffic is on and request paging type is undefined" do
+          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
+          expect(client).not_to receive(:send_request)
+          expect { client.deliver(dup_input) }.not_to raise_error
+        end
+
+        it "paging type is not checked when perform checks is off" do
+          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :perform_checks => false }))
+          expect(client).to receive(:send_request)
+          expect { client.deliver(dup_input) }.not_to raise_error
+        end
+
+        it "does not throw for invalid paging" do
+          input_with_unpaged[:request] = Hash[input_with_unpaged[:request]]
+          input_with_unpaged[:request][:paging] = { size: 2, offset: 1000 }
+          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
+          expect(client).not_to receive(:send_request)
+          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+        end
+
+        it "samples in" do
+          srand(0)
+          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.6 }))
+          expect(client).to receive(:send_request)
+          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+          client.close
+        end
+
+        it "samples out" do
+          srand(0)
+          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
+          expect(client).not_to receive(:send_request)
+          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+        end
+
+        it "works in a normal case" do
+          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
+          expect(client.async_shadow_traffic).to be true
+
+          delivery_req = nil
+          expect(client).to receive(:send_request) {|value|
+            delivery_req = value
+          }
+
+          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+          client.close
+
+          expect(delivery_req.key?(:insertion)).to be true
+          expect(delivery_req[:insertion].length()).to be 5
+          expect(delivery_req.key?(:timing)).to be true
+          expect(delivery_req.key?(:client_info)).to be true
+          expect(delivery_req.key?(:device)).to be true
+          expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
+          expect(delivery_req[:client_info][:client_type]).to be Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER']
+          expect(delivery_req.key?(:user_info)).to be true
+          expect(delivery_req.key?(:use_case)).to be true
+          expect(delivery_req.key?(:properties)).to be true
+
+          # Requests sent to delivery do not have request ids set.
+          expect(delivery_req.key?(:request_id)).to be false
+        end
+
+        it "sends synchronous shadow traffic" do
+          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :async_shadow_traffic => false }))
+          expect(client.async_shadow_traffic).to be false
+
+          delivery_req = nil
+          expect(client).to receive(:send_request) {|value|
+            delivery_req = value
+          }
+          # no client.close call, which would wait on the thread pool -- the thread pool should not be created in this test case.
+
+          logging_json = nil
+          expect {
+            response = client.deliver(input_with_unpaged)
+            logging_json = response[:log_request]
+          }.not_to raise_error
+          expect(logging_json).not_to be nil
+
+          expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
+        end
+
+        it "does not raise on error in synchronous shadow traffic" do
+          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :async_shadow_traffic => false }))
+          expect(client.async_shadow_traffic).to be false
+
+          expect(client).to receive(:send_request).and_raise(StandardError)
+
+          # no client.close call, which would wait on the thread pool -- the thread pool should not be created in this test case.
+
+          logging_json = nil
+          expect {
+            response = client.deliver(input_with_unpaged)
+            logging_json = response[:log_request]
+          }.not_to raise_error
+          expect(logging_json).not_to be nil
+        end
+
+        it "passes the endpoint, timeout, and api key" do
+          client = described_class.new(ENDPOINTS.merge( { :shadow_traffic_delivery_percent => 1.0, :delivery_api_key => "my api key", :delivery_timeout_millis => 777 } ))
+          recv_headers = nil
+          recv_endpoint = nil
+          recv_timeout = nil
+          allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
+            recv_endpoint = endpoint
+            recv_headers = headers
+            recv_timeout = timeout
+          }
+          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+          client.close
+
+          expect(recv_endpoint).to eq(ENDPOINTS[:delivery_endpoint])
+          expect(recv_headers.key?("x-api-key")).to be true
+          expect(recv_headers["x-api-key"]).to eq("my api key")
+          expect(recv_timeout).to eq(777)
+        end
+      end
+
+      context "log request" do
+        it "works in a good case" do
+          client = described_class.new
+          expect(client).to receive(:send_request)
+          response = client.deliver(input_with_only_log)
+          logging_json = response[:log_request]
+          expect { client.send_log_request(logging_json) }.not_to raise_error
+
+          # deliver should set request and insertion ids
+          expect(logging_json[:delivery_log][0].key?(:request)).to be true
+          expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
+          logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
+            expect(insertion[:insertion_id]).not_to be nil
+          end
+        end
+
+        it "swallows errors" do
+          client = described_class.new
+          expect(client).to receive(:send_request).and_raise(StandardError)
+          response = client.deliver(input_with_only_log)
+          logging_json = response[:log_request]
+          expect { client.send_log_request(logging_json) }.not_to raise_error
+        end
+
+        it "passes the endpoint, timeout, and api key" do
+          client = described_class.new(ENDPOINTS.merge( { :metrics_api_key => "my api key", :metrics_timeout_millis => 777 } ))
+          recv_headers = nil
+          recv_endpoint = nil
+          recv_timeout = nil
+          allow(client.http_client).to receive(:send) { |endpoint, timeout, request, headers|
+            recv_endpoint = endpoint
+            recv_headers = headers
+            recv_timeout = timeout
+          }
+          response = client.deliver(input_with_only_log)
+          logging_json = response[:log_request]
+          expect { client.send_log_request(logging_json) }.not_to raise_error
+          expect(recv_endpoint).to eq(ENDPOINTS[:metrics_endpoint])
+          expect(recv_headers.key?("x-api-key")).to be true
+          expect(recv_headers["x-api-key"]).to eq("my api key")
+          expect(recv_timeout).to eq(777)
+        end
+      end
+
+      it "preempts prepare_for_logging when disabled" do
+        client = described_class.new({ :enabled => false })
+        response = client.deliver(input_with_only_log)
+        expect(response[:log_request]).to be nil
+      end
+    end
+
     it "passes the endpoint and api key" do
       client = described_class.new(ENDPOINTS.merge( { :delivery_api_key => "my api key" } ))
       recv_headers = nil
@@ -434,12 +443,12 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         
     it "delivers in a good case" do
       client = described_class.new
-      full_insertion = @input[:fullInsertion]
+      insertion = @input[:request][:insertion]
       
       delivery_req = nil
       allow(client).to receive(:send_request) { |value|
         delivery_req = value
-        { :insertion => full_insertion }
+        { :insertion => insertion }
       }
 
       deliver_resp = client.deliver @input
@@ -465,17 +474,17 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(delivery_req.key?(:device)).to be true
       expect(delivery_req[:client_info][:traffic_type]).to be Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
       expect(delivery_req[:client_info][:client_type]).to be Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER']
-      expect(delivery_req[:insertion].length).to eq full_insertion.length
+      expect(delivery_req[:insertion].length).to eq insertion.length
     end
 
     it "delivers respecting max request insertions" do
       client = described_class.new({ :max_request_insertions => 2 })
-      full_insertion = @input[:fullInsertion]
+      insertion = @input[:request][:insertion]
       
       delivery_req = nil
       allow(client).to receive(:send_request) { |value|
         delivery_req = value
-        { :insertion => full_insertion.slice(0, 2) }
+        { :insertion => insertion.slice(0, 2) }
       }
 
       deliver_resp = client.deliver @input
@@ -558,7 +567,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
       expect(deliver_resp.key?(:insertion)).to be true
-      expect(deliver_resp[:insertion].length()).to eq(@input[:fullInsertion].length())
+      expect(deliver_resp[:insertion].length()).to eq(@input[:request][:insertion].length())
       expect(deliver_resp[:execution_server]).to eq(Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
       
       log_request = deliver_resp[:log_request]
@@ -570,75 +579,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       # Should fill in insertion id
       expect(deliver_resp[:insertion][0][:insertion_id]).not_to be nil
-    end
-    
-    it "can compact insertions with all properties" do
-      @input[:to_compact_delivery_properties_func] = described_class.remove_all_properties
-
-      client = described_class.new
-      full_insertion = @input[:fullInsertion]
-      delivery_req = nil
-      allow(client).to receive(:send_request) { |value|
-        delivery_req = value
-        { :insertion => full_insertion }
-      }
-
-      deliver_resp = client.deliver @input
-
-      # Request insertions should not have properties
-      delivery_req[:insertion].each do |insertion|
-        expect(insertion.key?(:properties)).to be false
-      end
-
-      # But we should have put the properties back on the response insertions.
-      deliver_resp[:insertion].each do |insertion|
-        expect(insertion.key?(:properties)).to be true
-        expect(insertion[:properties].key?(:struct)).to be true
-        expect(insertion[:properties][:struct].key?(:product)).to be true
-      end
-
-      expect(deliver_resp).not_to be nil
-      expect(deliver_resp.key?(:insertion)).to be true
-
-      # No log request generated since there's no experiment and we delivered the request.
-      expect(deliver_resp[:log_request]).to be nil
-    end
-
-    it "can compact insertions with a subset of properties" do
-      to_compact_delivery_properties_func = Proc.new do |properties|
-          properties[:struct][:product].delete(:url)
-          properties
-      end
-
-      @input[:to_compact_delivery_properties_func] = to_compact_delivery_properties_func
-
-      client = described_class.new
-      full_insertion = @input[:fullInsertion]
-      delivery_req = nil
-      allow(client).to receive(:send_request) { |value|
-        delivery_req = value
-        { :insertion => full_insertion }
-      }
-
-      deliver_resp = client.deliver @input
-
-      # Request insertions should have some properties
-      delivery_req[:insertion].each do |insertion|
-        expect(insertion.key?(:properties)).to be true
-        expect(insertion[:properties][:struct].key?(:product)).to be true
-        expect(insertion[:properties][:struct][:product].key?(:id)).to be true
-        expect(insertion[:properties][:struct][:product].key?(:title)).to be true
-        expect(insertion[:properties][:struct][:product].key?(:url)).to be false
-      end
-
-      # We should have put all properties back on the response insertions.
-      deliver_resp[:insertion].each do |insertion|
-        expect(insertion.key?(:properties)).to be true
-        expect(insertion[:properties][:struct].key?(:product)).to be true
-        expect(insertion[:properties][:struct][:product].key?(:id)).to be true
-        expect(insertion[:properties][:struct][:product].key?(:title)).to be true
-        expect(insertion[:properties][:struct][:product].key?(:url)).to be true
-      end
     end
   end
 
@@ -700,12 +640,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(resp[:insertion].length).to be 1
       expect(resp[:log_request]).to be nil
     end
-
-    it "preempts prepare_for_logging when disabled" do
-      client = described_class.new({ :enabled => false })
-      logging_json = client.prepare_for_logging(@input)
-      expect(logging_json[:delivery_log]).to be nil
-    end
   end
 
   context "cohorts" do
@@ -718,9 +652,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
 
     it "delivers shadow traffic for control arm by default" do
-      client = described_class.new
+      client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
-      
+      @input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
+
       delivery_req = nil
       expect(client).to receive(:send_request) {|value|
         delivery_req = value
@@ -746,7 +681,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(logging_json[:delivery_log][0][:request][:client_request_id]).not_to be nil
       expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
       logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
-        expect(insertion[:request_id]).not_to be nil
+        expect(insertion[:request_id]).to be nil
       end
       expect(deliver_resp[:client_request_id]).to eq(logging_json[:delivery_log][0][:request][:client_request_id])
 
@@ -779,7 +714,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(logging_json[:delivery_log][0][:request][:client_request_id]).not_to be nil
       expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
       logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
-        expect(insertion[:request_id]).not_to be nil
+        expect(insertion[:request_id]).to be nil
       end
       expect(deliver_resp[:client_request_id]).to eq(logging_json[:delivery_log][0][:request][:client_request_id])
     end
@@ -791,9 +726,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         false
       end
 
-      client = described_class.new({ :should_apply_treatment_func => should_apply_func })
-
+      client = described_class.new({ :should_apply_treatment_func => should_apply_func, :shadow_traffic_delivery_percent => 1.0 })
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
+      @input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
 
       delivery_req = nil
       expect(client).to receive(:send_request) {|value|
@@ -820,7 +755,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(logging_json[:delivery_log][0][:request][:client_request_id]).not_to be nil
       expect(logging_json[:delivery_log][0][:request][:request_id]).not_to be nil
       logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
-        expect(insertion[:request_id]).not_to be nil
+        expect(insertion[:request_id]).to be nil
       end
       expect(deliver_resp[:client_request_id]).to eq(logging_json[:delivery_log][0][:request][:client_request_id])
  
@@ -829,7 +764,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
 
     it "does deliver for treatment arm" do
-      full_insertion = @input[:fullInsertion]
+      insertion = @input[:request][:insertion]
       client = described_class.new
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
 
@@ -837,7 +772,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(client).to receive(:send_request) {|value|
         delivery_req = value
       }.and_return({
-        :insertion => full_insertion
+        :insertion => insertion
       })
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
@@ -863,7 +798,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         true
       end
 
-      full_insertion = @input[:fullInsertion]
+      insertion = @input[:request][:insertion]
 
       client = described_class.new({ :should_apply_treatment_func => should_apply_func })
 
@@ -872,7 +807,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(client).to receive(:send_request) {|value|
         delivery_req = value
       }.and_return({
-        :insertion => full_insertion
+        :insertion => insertion
       })
       deliver_resp = client.deliver @input
       expect(deliver_resp).not_to be nil
@@ -888,47 +823,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(called_with.key?(:user_info)).to be true
 
       expect(delivery_req[:client_info][:traffic_type]).to eq Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
-    end
-  end
-
-  context "prepare_for_logging when user defined method is passed" do
-    let!(:to_compact_metrics_properties_func) do
-      Proc.new do |properties|
-        properties[:struct].delete(:invites_required)
-        properties[:struct].delete(:should_discount_addons)
-        properties[:struct].delete(:total_uses)
-        properties[:struct].delete(:is_archived)
-        properties
-      end
-    end
-    let!(:input_with_prop) do
-      input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
-      input_with_prop[:to_compact_metrics_properties_func] = to_compact_metrics_properties_func
-      input_with_prop
-    end
-
-    it "should take proc from input and delete the property values accordingly" do
-      client = described_class.new ENDPOINTS
-      logging_json = client.prepare_for_logging(input_with_prop)
-      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
-        expect(insertion[:properties][:struct].key?(:invites_required)).to be false
-        expect(insertion[:properties][:struct].key?(:should_discount_addons)).to be false
-        expect(insertion[:properties][:struct].key?(:total_uses)).to be false
-        expect(insertion[:properties][:struct].key?(:is_archived)).to be false
-      end
-    end
-
-    it "should take proc from input but should not delete the property values that are not included in proc" do
-      client = described_class.new ENDPOINTS
-      logging_json = client.prepare_for_logging(input_with_prop)
-      logging_json[:delivery_log][0][:response][:insertion].each do |insertion|
-        # some_property_1 is nil so it gets stripped from the compacted insertions.
-        expect(insertion[:properties][:struct].key?(:some_property_1)).to be false
-
-        expect(insertion[:properties][:struct].key?(:some_property_2)).to be true
-        expect(insertion[:properties][:struct].key?(:last_used_at)).to be true
-        expect(insertion[:properties][:struct].key?(:last_purchase_at)).to be true
-      end
     end
   end
 end

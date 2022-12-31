@@ -99,6 +99,7 @@ module Promoted
                         },
                         {
                             :name => :insertion,
+                            :required => true,
                             :type => Array
                         }
                     ]
@@ -115,6 +116,7 @@ module Promoted
                 end
             end
 
+            # TODO - delete?
             def validate_metrics_request!(metrics_req)
                 validate_fields!(
                     metrics_req,
@@ -123,33 +125,25 @@ module Promoted
                         {
                             :name => :request,
                             :required => true
-                        },
-                        {
-                            :name => :full_insertion,
-                            :required => true,
-                            :type => Array
                         }
                     ]
                 )
 
                 validate_request!(metrics_req[:request])
-                metrics_req[:full_insertion].each {|ins|
-                    validate_insertion! ins
-                }
             end
 
             def check_that_log_ids_not_set! req
+                raise ValidationError.new("Request should be set") if !req[:request]
                 raise ValidationError.new("Request.requestId should not be set") if req.dig(:request, :request_id)
-                raise ValidationError.new("Do not set Request.insertion.  Set full_insertion.") if req[:insertion]
       
-                req[:full_insertion].each do |insertion_hash|
+                req[:request][:insertion].each do |insertion_hash|
                   raise ValidationError.new("Insertion.requestId should not be set") if insertion_hash[:request_id]
                   raise ValidationError.new("'Insertion.insertionId should not be set") if insertion_hash[:insertion_id]
                 end
             end
             
             def check_that_content_ids_are_set! req
-              req[:full_insertion].each do |insertion_hash|
+              req[:request][:insertion].each do |insertion_hash|
                 raise ValidationError.new("Insertion.contentId should be set") if !insertion_hash[:content_id] || insertion_hash[:content_id].empty?
               end
             end

@@ -52,15 +52,17 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
                 :struct => {
                 :active => true
                 }
-            }
             },
-            :full_insertion => insertions
+            :insertion => insertions
+            },
+            :only_log => true
         }
 
         client = described_class.new(ENDPOINTS)
 
         # Build a log request
-        log_request = client.prepare_for_logging(metrics_request)    
+        client_response = client.deliver(metrics_request)
+        log_request = client_response[:log_request]
 
         client.send_log_request log_request
         
@@ -77,9 +79,9 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
                 :struct => {
                 :active => true
                 }
-            }
             },
-            :full_insertion => insertions,
+            :insertion => insertions,
+            },
             :only_log => false
         }
   

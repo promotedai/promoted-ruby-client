@@ -31,14 +31,6 @@ module Promoted
           @enabled
         end
 
-        ##            
-        # A common compact properties method implementation.
-        def self.remove_all_properties
-          Proc.new do |properties|
-            nil
-          end
-        end
-
         ##
         # Create and configure a new Promoted client.
         def initialize(params={})
@@ -127,7 +119,7 @@ module Promoted
           # Respect the enabled state
           if !@enabled
             return {
-              insertion: @pager.apply_paging(args[:full_insertion], Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], args[:request][:paging])
+              insertion: @pager.apply_paging(args[:request][:insertion], Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], args[:request][:paging])
               # No log request returned when disabled
             }
           end
@@ -135,14 +127,22 @@ module Promoted
           delivery_request_builder = RequestBuilder.new
           delivery_request_builder.set_request_params(args)
 
+          only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
+
+          # Gets modified depending on the call.
+          should_send_shadow_traffic = @shadow_traffic_delivery_percent > 0
           # perform_checks raises errors.
           if @perform_checks
             perform_common_checks!(args)
+            if !only_log && args[:insertion_page_type] == Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED'] then
+                err = DeliveryInsertionPageType.new
+                @logger.error(err) if @logger
+                raise err
+              end
 
-            if args[:insertion_page_type] == Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED'] then
-              err = DeliveryInsertionPageType.new
-              @logger.error(err) if @logger
-              raise err
+            if should_send_shadow_traffic && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
+              should_send_shadow_traffic = false
+              @logger.error(ShadowTrafficInsertionPageType.new) if @logger
             end
           end
 
@@ -152,17 +152,16 @@ module Promoted
           cohort_membership_to_log = nil
           insertions_from_delivery = false
 
-          only_log = delivery_request_builder.only_log != nil ? delivery_request_builder.only_log : @default_only_log
           deliver_err = false
 
           # Trim any request insertions over the maximum allowed.
-          if delivery_request_builder.full_insertion.length > @max_request_insertions then
+          if delivery_request_builder.insertion.length > @max_request_insertions then
             @logger.warn("Exceeded max request insertions, trimming") if @logger
-            delivery_request_builder.full_insertion = delivery_request_builder.full_insertion[0, @max_request_insertions]
+            delivery_request_builder.insertion = delivery_request_builder.insertion[0, @max_request_insertions]
           end
 
           begin
-            @pager.validate_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
+            @pager.validate_paging(delivery_request_builder.insertion, delivery_request_builder.request[:paging])
           rescue InvalidPagingError => err
             # Invalid input, log and do SDK-side delivery.
             @logger.warn(err) if @logger
@@ -186,16 +185,22 @@ module Promoted
                 deliver_err = true
                 @logger.error("Error calling delivery: " + err.message) if @logger
               end
-            elsif @send_shadow_traffic_for_control
-              # Call Delivery API to send shadow traffic. This will create the request params with traffic type set.
-              deliver_shadow_traffic args, headers
+              should_send_shadow_traffic = false
+            else
+              should_send_shadow_traffic &&= @send_shadow_traffic_for_control
             end
 
             insertions_from_delivery = (response != nil && !deliver_err);
             response_insertions = delivery_request_builder.fill_details_from_response(
               response && response[:insertion] || [])
           end
-  
+
+          should_send_shadow_traffic &&= should_send_as_shadow_traffic?
+          if should_send_shadow_traffic then
+              # Call Delivery API to send shadow traffic. This will create the request params with traffic type set.
+              deliver_shadow_traffic args, headers
+          end
+
           request_to_log = nil
           if !insertions_from_delivery then
             request_to_log = delivery_request_builder.request
@@ -209,7 +214,7 @@ module Promoted
           if request_to_log || cohort_membership_to_log
             log_request_builder = RequestBuilder.new
             log_request = {
-              :full_insertion => response_insertions,
+              :insertion => response_insertions,
               :experiment => cohort_membership_to_log,
               :request => request_to_log
             }
@@ -237,44 +242,6 @@ module Promoted
         end
 
         ##
-        # Generate a log request for a subsequent call to send_log_request
-        # or for logging via alternative means.
-        def prepare_for_logging args, headers={}
-          args = Promoted::Ruby::Client::Util.translate_hash(args)
-
-          if !@enabled
-            return {
-              insertion: args[:full_insertion]
-            }
-          end
-
-          log_request_builder = RequestBuilder.new
-
-          # Note: This method expects as JSON (string keys) but internally, RequestBuilder
-          # transforms and works with symbol keys.
-          log_request_builder.set_request_params(args)
-          shadow_traffic_err = false
-          if @perform_checks
-            perform_common_checks! args
-
-            if @shadow_traffic_delivery_percent > 0 && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
-              shadow_traffic_err = true
-              @logger.error(ShadowTrafficInsertionPageType.new) if @logger
-            end
-          end
-          
-          log_request_builder.ensure_client_timestamp
-
-          if !shadow_traffic_err && should_send_as_shadow_traffic?
-            deliver_shadow_traffic args, headers
-          end
-
-          log_request_builder.log_request_params(
-            include_delivery_log: true, 
-            exec_server: Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
-        end
-
-        ##
         # Sends a log request (previously created by a call to prepare_for_logging) to the metrics endpoint.
         def send_log_request log_request_params, headers={}
           begin
@@ -290,7 +257,7 @@ module Promoted
         ##
         # Creates response insertions for SDK-side delivery, when we don't get response insertions from Delivery API.
         def build_sdk_response_insertions delivery_request_builder
-          response_insertions = @pager.apply_paging(delivery_request_builder.full_insertion, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], delivery_request_builder.request[:paging])
+          response_insertions = @pager.apply_paging(delivery_request_builder.insertion, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], delivery_request_builder.request[:paging])
           delivery_request_builder.add_missing_insertion_ids! response_insertions
           return response_insertions
         end
@@ -367,7 +334,7 @@ module Promoted
           delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
 
           begin
-            @pager.validate_paging(delivery_request_builder.full_insertion, delivery_request_builder.request[:paging])
+            @pager.validate_paging(delivery_request_builder.insertion, delivery_request_builder.request[:paging])
           rescue InvalidPagingError => err
             # Invalid input, log and skip.
             @logger.warn("Shadow traffic call failed with invalid paging #{err}") if @logger

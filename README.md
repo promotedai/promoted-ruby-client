@@ -182,13 +182,6 @@ Field Name | Type | Optional? | Description
 ```:paging``` | Paging | Yes | Paging parameters (see TODO)
 ```:device``` | Device | Yes | Device information (as available)
 ---
-### MetricsRequest
-Input to ```prepare_for_logging```
-Field Name | Type | Optional? | Description
----------- | ---- | --------- | -----------
-```:request``` | Request | No | The underlying request for content.
-```:full_insertion``` | [] of Insertion | No | The proposed list of insertions.
----
 
 ### DeliveryRequest
 Input to ```deliver```
@@ -196,7 +189,6 @@ Field Name | Type | Optional? | Description
 ---------- | ---- | --------- | -----------
 ```:experiment``` | CohortMembership | Yes | A cohort to evaluation in experimentation.
 ```:request``` | Request | No | The underlying request for content.
-```:full_insertion``` | [] of Insertion | No | The proposed list of insertions with all metadata, will be compacted before forwarding to Promoted.
 ```:only_log``` | Boolean | Yes | Defaults to false. Set to true to override whether Delivery API is called for this request.
 ---
 
@@ -288,28 +280,20 @@ metrics_request = {
       :struct => {
         :active => true
       }
-    }
+    },
+    :insertion => insertions
   },
-  :full_insertion => insertions
+  :only_log => true,
 }
-
-# OPTIONAL: You can pass a custom function to "compact" insertions before metrics logging.
-# Note that the PromotedClient has a class method helper, remove_all_properties, that does
-# an implementation of this, returning nil to remove ALL properties.
-to_compact_metrics_properties_func = Proc.new do |properties|
-  properties[:struct].delete(:active)
-  properties
-end
-# metrics_request[:to_compact_metrics_properties_func] = to_compact_metrics_properties_func
 
 # Create a client
 client = Promoted::Ruby::Client::PromotedClient.new
 
 # Build a log request
-log_request = client.prepare_for_logging(metrics_request)
+client_response = client.deliver(metrics_request)
 
 # Log (assuming you have configured your client with a :metrics_endpoint)
-client.send_log_request(log_request)
+client.send_log_request(client_response[:log_request]) if client_response[:log_request]
 ```
 
 ## Delivery API
@@ -332,9 +316,9 @@ delivery_request = {
       :struct => {
         :active => true
       }
-    }
+    },
+    :insertion => insertions,
   },
-  :full_insertion => insertions,
   :only_log => false
 }
 
