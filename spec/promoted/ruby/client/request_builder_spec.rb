@@ -138,28 +138,23 @@ RSpec.describe Promoted::Ruby::Client::RequestBuilder do
                       insertion:
                       [{
                         content_id: "5b4a6512326bd9777abfabc34",
-                        # TODO - this looks broken.
-                        properties: []
+                        properties: {}
                       },
                       {
                         content_id: "5b4a6512326bd9777abfabea",
-                        # TODO - this looks broken.
-                        properties: []
+                        properties: {}
                       },
                       {
                         content_id: "5b4a6512326bd9777abfabcf",
-                        # TODO - this looks broken.
-                        properties: []
+                        properties: {}
                       },
                       {
                         content_id: "5b4a6512326bd9777abfabcf",
-                        # TODO - this looks broken.
-                        properties: []
+                        properties: {}
                       },
                       {
                         content_id: "5b4a6512326bd9777abfabcf",
-                        # TODO - this looks broken.
-                        properties: []
+                        properties: {}
                       }]
                     },
                     response: {

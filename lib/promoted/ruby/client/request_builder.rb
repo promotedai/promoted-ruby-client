@@ -179,10 +179,6 @@ module Promoted
         def add_missing_ids_on_insertions! request, insertions
           add_missing_insertion_ids! insertions
         end
-
-        #def insertion
-        #  @insertion
-        #end
       end
     end
   end
