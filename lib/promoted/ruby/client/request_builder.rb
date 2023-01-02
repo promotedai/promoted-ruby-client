@@ -124,7 +124,7 @@ module Promoted
               }
             }]
 
-            add_missing_ids_on_insertions! request, params[:delivery_log][0][:response][:insertion]
+            add_missing_insertion_ids! params[:delivery_log][0][:response][:insertion]            
           end
           
           params.clean!
@@ -174,10 +174,6 @@ module Promoted
             :client_type => Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER'],
             :traffic_type => Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
           })
-        end
-        
-        def add_missing_ids_on_insertions! request, insertions
-          add_missing_insertion_ids! insertions
         end
       end
     end
