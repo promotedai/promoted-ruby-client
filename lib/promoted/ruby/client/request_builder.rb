@@ -3,10 +3,9 @@ module Promoted
     module Client
       class RequestBuilder
         attr_reader   :session_id, :only_log, :experiment, :client_info, :device,
-                      :view_id, :insertion, :to_compact_delivery_properties_func,
-                      :request_id, :use_case, :request, :to_compact_metrics_properties_func
+                      :view_id, :insertion, :request_id, :use_case, :request
 
-        attr_accessor :timing, :user_info, :platform_id, :full_insertion
+        attr_accessor :timing, :user_info, :platform_id, :insertion
 
         def initialize args = {}
           if args[:id_generator]
@@ -27,11 +26,9 @@ module Promoted
           @device                  = request[:device] || {}
           @view_id                 = request[:view_id]
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || Promoted::Ruby::Client::USE_CASES['UNKNOWN_USE_CASE']
-          @full_insertion          = args[:full_insertion]
+          @insertion               = request[:insertion] || []
           @user_info               = request[:user_info] || { :user_id => nil, :log_user_id => nil}
           @timing                  = request[:timing] || { :client_log_timestamp => (Time.now.to_f * 1000).to_i }
-          @to_compact_metrics_properties_func       = args[:to_compact_metrics_properties_func]
-          @to_compact_delivery_properties_func      = args[:to_compact_delivery_properties_func]
 
           # If the user didn't create a client request id, we do it for them.
           request[:client_request_id] = request[:client_request_id] || @id_generator.newID
@@ -68,7 +65,7 @@ module Promoted
             paging: request[:paging],
             client_request_id: client_request_id
           }
-          params[:insertion] = insertions_with_compact_props(@to_compact_delivery_properties_func)
+          params[:insertion] = insertion
 
           params.clean!
         end
@@ -81,7 +78,7 @@ module Promoted
             response_insertions = []
           end
 
-          props = @full_insertion.each_with_object({}) do |insertion, hash|
+          props = @insertion.each_with_object({}) do |insertion, hash|
             if insertion.has_key?(:properties)
               # Don't add nil properties to response insertions.
               hash[insertion[:content_id]] = insertion[:properties]
@@ -123,42 +120,14 @@ module Promoted
               },
               request: request,
               response: {
-                insertion: insertions_with_compact_metrics_properties
+                insertion: response_insertion
               }
             }]
 
-            add_missing_ids_on_insertions! request, params[:delivery_log][0][:response][:insertion]
+            add_missing_insertion_ids! params[:delivery_log][0][:response][:insertion]            
           end
           
           params.clean!
-        end
-
-        def compact_one_insertion(insertion, compact_func)
-          return insertion if (!compact_func || !insertion[:properties])
-
-          # Only need a copy if there are properties to compact.
-          compact_insertion = insertion.dup
-
-          # Let the custom function work with a deep copy of the properties.
-          # There's really no way to work with a shallow copy and still be able
-          # to restore the correct insertion properties after a call to delivery.
-          new_props =  Marshal.load(Marshal.dump(insertion[:properties]))
-          compact_insertion[:properties] = compact_func.call(new_props)
-          compact_insertion.clean!
-          return compact_insertion
-        end
-
-        def insertions_with_compact_props(compact_func)
-          if !compact_func
-            # Nothing to do, avoid copying the whole array.
-            full_insertion
-          else
-            compact_insertions = Array.new(full_insertion.length)
-            full_insertion.each_with_index {|insertion, index|
-              compact_insertions[index] = compact_one_insertion(insertion, compact_func)
-            }
-            compact_insertions
-          end
         end
 
         def ensure_client_timestamp
@@ -167,30 +136,25 @@ module Promoted
           end
         end
 
-        # TODO: This looks overly complicated.
-        def insertions_with_compact_metrics_properties
-          @insertion            = [] # insertion should be set according to the compact insertion
+        def response_insertion
+          @response_insertions  = []
           paging                = request[:paging] || {}
           size                  = paging[:size] ? paging[:size].to_i : 0
           if size <= 0
-            size = full_insertion.length()
+            size = insertion.length()
           end
           offset                = paging[:offset] ? paging[:offset].to_i : 0
 
-          full_insertion.each_with_index do |insertion_obj, index|
+          insertion.each_with_index do |insertion_obj, index|
             # TODO - this does not look performant.
-            break if @insertion.length() >= size
-
-            insertion_obj                = insertion_obj.transform_keys{ |key| key.to_s.to_underscore.to_sym }
-            insertion_obj                = Hash[insertion_obj]
-            insertion_obj[:user_info]    = user_info
-            insertion_obj[:timing]       = timing
-            insertion_obj[:request_id]   = request_id
-            insertion_obj[:position]     = offset + index
-            insertion_obj                = compact_one_insertion(insertion_obj, @to_compact_metrics_properties_func)
-            @insertion << insertion_obj.clean!
+            break if @response_insertions.length() >= size
+            response_insertion = Hash[]
+            response_insertion[:content_id]   = insertion_obj[:content_id]
+            response_insertion[:position]     = offset + index
+            response_insertion[:insertion_id] = insertion_obj[:insertion_id]
+            @response_insertions << response_insertion.clean!
           end
-          @insertion
+          @response_insertions
         end
 
         def add_missing_insertion_ids! insertions
@@ -210,21 +174,6 @@ module Promoted
             :client_type => Promoted::Ruby::Client::CLIENT_TYPE['PLATFORM_SERVER'],
             :traffic_type => Promoted::Ruby::Client::TRAFFIC_TYPE['PRODUCTION']
           })
-        end
-        
-        def add_missing_ids_on_insertions! request, insertions
-          insertions.each do |insertion|
-            insertion[:session_id] = request[:session_id] if request[:session_id]
-            insertion[:request_id] = request[:request_id] if request[:request_id]
-          end
-          add_missing_insertion_ids! insertions
-        end
-
-        # A list of the response Insertions.  This client expects lists to be truncated
-        # already to request.paging.size.  If not truncated, this client will truncate
-        # the list.
-        def insertion
-          @insertion
         end
       end
     end
