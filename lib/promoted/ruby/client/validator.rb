@@ -116,6 +116,24 @@ module Promoted
                 end
             end
 
+            def validate_response!(res)
+                validate_fields!(
+                    res,
+                    "response",
+                    [
+                        {
+                            :name => :request_id,
+                            :required => true,
+                            :type => String
+                        }
+                    ]
+                )
+
+                if !res.key?(:insertion) then
+                    res[:insertion] = []
+                end
+            end
+
             # TODO - delete?
             def validate_metrics_request!(metrics_req)
                 validate_fields!(

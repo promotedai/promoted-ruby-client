@@ -179,6 +179,7 @@ module Promoted
               delivery_request_params = delivery_request_builder.delivery_request_params  
               begin
                 response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers)
+                @validator.validate_response!(response)
               rescue  StandardError => err
                 # Currently we don't propagate errors to the SDK caller, but rather default to returning
                 # the request insertions.
@@ -346,6 +347,7 @@ module Promoted
           response = nil
           begin
             response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers, @async_shadow_traffic)
+            @validator.validate_response!(response)
           rescue StandardError => err
             @logger.warn("Shadow traffic call failed with #{err}") if @logger
             return

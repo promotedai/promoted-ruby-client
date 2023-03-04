@@ -448,7 +448,10 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       delivery_req = nil
       allow(client).to receive(:send_request) { |value|
         delivery_req = value
-        { :insertion => insertion }
+        {
+          :request_id => "reqid",
+          :insertion => insertion
+        }
       }
 
       deliver_resp = client.deliver @input
@@ -500,6 +503,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "delivers with empty insertions, which is not an error" do
       client = described_class.new
       expect(client).to receive(:send_request).and_return({
+        :request_id => "reqid",
         :insertion => []
       })
       deliver_resp = client.deliver @input
@@ -516,6 +520,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "delivers with nil insertions, which is not an error" do
       client = described_class.new
       expect(client).to receive(:send_request).and_return({
+        :request_id => "reqid",
         :insertion => nil
       })
       deliver_resp = client.deliver @input
@@ -772,6 +777,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(client).to receive(:send_request) {|value|
         delivery_req = value
       }.and_return({
+        :request_id => "reqid",
         :insertion => insertion
       })
       deliver_resp = client.deliver @input
@@ -807,6 +813,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(client).to receive(:send_request) {|value|
         delivery_req = value
       }.and_return({
+        :request_id => "reqid",
         :insertion => insertion
       })
       deliver_resp = client.deliver @input
