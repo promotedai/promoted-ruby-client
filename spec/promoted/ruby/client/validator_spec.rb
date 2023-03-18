@@ -74,6 +74,22 @@ RSpec.describe Promoted::Ruby::Client::Validator do
         end
     end
 
+    context("response") do
+        it "validates requires request_id" do
+            response = {}.freeze
+            expect { @v.validate_response!(response) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request_id/)
+        end
+
+        it "validates adds missing insertion field" do
+            response = {
+                :request_id => "reqid"
+            }
+            expect { @v.validate_response!(response) }.not_to raise_error
+            expected = []
+            expect(response[:insertion]).to eq expected
+        end
+    end
+
     context "user info" do
         it "validates correct user_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
