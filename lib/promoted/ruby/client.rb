@@ -135,10 +135,10 @@ module Promoted
           if @perform_checks
             perform_common_checks!(args)
             if !only_log && args[:insertion_page_type] == Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED'] then
-                err = DeliveryInsertionPageType.new
-                @logger.error(err) if @logger
-                raise err
-              end
+              err = DeliveryInsertionPageType.new
+              @logger.error(err) if @logger
+              raise err
+            end
 
             if should_send_shadow_traffic && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
               should_send_shadow_traffic = false
@@ -192,8 +192,7 @@ module Promoted
             end
 
             insertions_from_delivery = (response != nil && !deliver_err);
-            response_insertions = delivery_request_builder.fill_details_from_response(
-              response && response[:insertion] || [])
+            response_insertions = response && response[:insertion] || []
           end
 
           should_send_shadow_traffic &&= should_send_as_shadow_traffic?
@@ -202,33 +201,24 @@ module Promoted
               deliver_shadow_traffic args, headers
           end
 
-          request_to_log = nil
           if !insertions_from_delivery then
-            request_to_log = delivery_request_builder.request
             response_insertions = build_sdk_response_insertions(delivery_request_builder)
           end
 
           log_req = nil
           exec_server = (insertions_from_delivery ? Promoted::Ruby::Client::EXECUTION_SERVER['API'] : Promoted::Ruby::Client::EXECUTION_SERVER['SDK'])
-          
-          # We only return a log request if there's a request or cohort to log.
-          if request_to_log || cohort_membership_to_log
-            log_request_builder = RequestBuilder.new
-            log_request = {
-              :insertion => response_insertions,
-              :experiment => cohort_membership_to_log,
-              :request => request_to_log
-            }
-            log_request_builder.set_request_params(log_request)
 
-            # We can't count on these being set already since request_to_log may be nil.
-            log_request_builder.platform_id = delivery_request_builder.platform_id
-            log_request_builder.timing      = delivery_request_builder.timing
-            log_request_builder.user_info   = delivery_request_builder.user_info
+          # We only return a log request if there's a request or cohort to log.
+          if !insertions_from_delivery || cohort_membership_to_log
+            log_request_builder = LogRequestBuilder.new
+            # TODO - make this more efficient.
+            log_request_builder.request = delivery_request_builder.delivery_request_params
+            log_request_builder.response_insertions = response_insertions
+            log_request_builder.experiment = cohort_membership_to_log
 
             # On a successful delivery request, we don't log the insertions
             # or the request since they are logged on the server-side.
-            log_req = log_request_builder.log_request_params(
+            log_req = log_request_builder.log_request(
               include_delivery_log: !insertions_from_delivery, 
               exec_server: exec_server)
           end
@@ -386,6 +376,7 @@ module Promoted
 end
 
 # dependent /libs
+require "promoted/ruby/client/log_request_builder"
 require "promoted/ruby/client/request_builder"
 require "promoted/ruby/client/pager"
 require "promoted/ruby/client/sampler"

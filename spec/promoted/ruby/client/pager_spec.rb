@@ -145,21 +145,6 @@ RSpec.describe Promoted::Ruby::Client::Pager do
       expect(res[2][:position]).to eq 2
     end
 
-    it "does not touch positions that are already set" do
-      @insertions[0][:position] = 100
-      @insertions[1][:position] = 101
-      @insertions[2][:position] = 102
-
-      pager = subject.class.new
-      res = pager.apply_paging(@insertions, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'])
-      expect(res.length).to eq @insertions.length
-
-      # Should leave positions alone that were already set, presumably these came from Delivery API.
-      expect(res[0][:position]).to eq 100
-      expect(res[1][:position]).to eq 101
-      expect(res[2][:position]).to eq 102
-    end
-
     it "handles empty input for unpaged" do
       pager = subject.class.new
       res = pager.apply_paging([], Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'])

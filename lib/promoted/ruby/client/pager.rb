@@ -50,11 +50,12 @@ module Promoted
               final_insertion_size = [size, insertions.length - index].min
               insertion_page = Array.new(final_insertion_size)
               0.upto(final_insertion_size - 1) {|i|
-                insertion = insertions[index]
-                if insertion[:position] == nil
-                  insertion[:position] = offset
-                end
-                insertion_page[i] = insertion
+                request_insertion = insertions[index]
+                response_insertion = Hash[]
+                response_insertion[:content_id] = request_insertion[:content_id]
+                response_insertion[:insertion_id] = request_insertion[:insertion_id]
+                response_insertion[:position] = offset
+                insertion_page[i] = response_insertion
                 index = index + 1
                 offset = offset + 1
               }

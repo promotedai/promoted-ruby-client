@@ -31,10 +31,10 @@ module Promoted
                 end
               end
               sym_hash
-              rescue => e
+              rescue
                 raise 'Unable to parse args. Please pass correct arguments. Must be JSON'
-              end      
             end
+        end
       end
-  end
+    end
 end
