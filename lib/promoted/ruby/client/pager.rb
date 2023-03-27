@@ -51,9 +51,11 @@ module Promoted
               insertion_page = Array.new(final_insertion_size)
               0.upto(final_insertion_size - 1) {|i|
                 request_insertion = insertions[index]
+                # Pager returns response insertions.  Create a copy and fill in some of the fields.
                 response_insertion = Hash[]
                 response_insertion[:content_id] = request_insertion[:content_id]
                 response_insertion[:insertion_id] = request_insertion[:insertion_id]
+                # TODO - implement retrieval_start.
                 response_insertion[:position] = offset
                 insertion_page[i] = response_insertion
                 index = index + 1

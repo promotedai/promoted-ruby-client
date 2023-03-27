@@ -17,7 +17,7 @@ module Promoted
           log_req = {
             platform_id: @request[:platform_id],
             user_info: @request[:user_info],
-            # TODO - what timing should be used on this?
+            # For now, we'll just use the request timestamp.
             timing: @request[:timing],
             client_info: @request[:client_info],
             device: @request[:device],
@@ -30,7 +30,7 @@ module Promoted
           # Log request allows for multiple requests but here we only send one.
           if include_delivery_log
             request[:request_id] = request[:request_id] || @id_generator.newID
-            # Remove redundant fields from `request`
+            # Remove redundant fields from `request` since they're already on the LogRequest.
             stripped_request = @request.clone
             stripped_request.delete(:platform_id)
             stripped_request.delete(:user_info)
