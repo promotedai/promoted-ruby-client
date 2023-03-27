@@ -205,7 +205,7 @@ Field Name | Type | Optional? | Description
 Output of ```deliver```, includes the insertions as well as a suitable ```LogRequest``` for forwarding to Metrics API.
 Field Name | Type | Optional? | Description
 ---------- | ---- | --------- | -----------
-```:insertion``` | [] of Insertion | No | The insertions, which are from Delivery API (when ```deliver``` was called, i.e. we weren't either only-log or part of an experiment) or the input insertions (when the other conditions don't hold).
+```:insertion``` | [] of Insertion | No | The paged insertions, which are from Delivery API (when ```deliver``` was called, i.e. we weren't either only-log or part of an experiment) or the input insertions (when the other conditions don't hold).
 ```:log_request``` | LogRequest | Yes | A message suitable for logging to Metrics API via ```send_log_request```. If the call to ```deliver``` was made (i.e. the request was not part of the CONTROL arm of an experiment or marked to only log), ```:log_request``` will not be set, as you can assume logging was performed on the server-side by Promoted.
 ```:client_request_id``` | String | Yes | Client-generated request id sent to Delivery API and may be useful for logging and debugging.
 ```:execution_server``` | one of 'API' or 'SDK' | Yes | Indicates if response insertions on a delivery request came from the API or the SDK.
