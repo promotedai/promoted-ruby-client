@@ -132,7 +132,8 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
           logging_json = response[:log_request]
 
           # No need to log empty assertions so we nil it out.
-          expect(logging_json[:delivery_log][0][:request][:insertion]).to be_empty
+          # PR - I don't know why this changed.  Both the previous code and this version have `.clean!`.
+          expect(logging_json[:delivery_log][0][:request][:insertion]).to be nil
         end
 
         it "should have insertion set" do

@@ -49,7 +49,6 @@ module Promoted
           return @experiment
         end
 
-        # Only used in delivery
         def delivery_request_params
           params = {
             user_info: user_info,
@@ -70,91 +69,10 @@ module Promoted
           params.clean!
         end
 
-        # Only used in delivery
-        # Maps the response insertions to the full insertions and re-insert the properties bag
-        # to the responses.
-        def fill_details_from_response response_insertions
-          if !response_insertions then
-            response_insertions = []
-          end
-
-          props = @insertion.each_with_object({}) do |insertion, hash|
-            if insertion.has_key?(:properties)
-              # Don't add nil properties to response insertions.
-              hash[insertion[:content_id]] = insertion[:properties]
-            end
-          end
-
-          filled_in_copy = []
-          response_insertions.each do |resp_insertion|
-            copied_insertion = resp_insertion.clone
-            if copied_insertion.has_key?(:content_id) && props.has_key?(copied_insertion[:content_id])
-              copied_insertion[:properties] = props[resp_insertion[:content_id]]
-            end
-            filled_in_copy << copied_insertion
-          end
-
-          filled_in_copy
-        end
-
-        def log_request_params(include_delivery_log:, exec_server:)
-          params = {
-            user_info: user_info,
-            timing: timing,
-            client_info: merge_client_info_defaults,
-            device: @device,
-          }
-
-          if @experiment
-            params[:cohort_membership] = [@experiment]
-          end
-
-          # Log request allows for multiple requests but here we only send one.
-          if include_delivery_log
-            request[:request_id] = request[:request_id] || @id_generator.newID
-
-            params[:delivery_log] = [{
-              execution: {
-                execution_server: exec_server,
-                server_version: Promoted::Ruby::Client::SERVER_VERSION
-              },
-              request: request,
-              response: {
-                insertion: response_insertion
-              }
-            }]
-
-            add_missing_insertion_ids! params[:delivery_log][0][:response][:insertion]            
-          end
-          
-          params.clean!
-        end
-
         def ensure_client_timestamp
           if timing[:client_log_timestamp].nil?
             timing[:client_log_timestamp] = (Time.now.to_f * 1000).to_i
           end
-        end
-
-        def response_insertion
-          @response_insertions  = []
-          paging                = request[:paging] || {}
-          size                  = paging[:size] ? paging[:size].to_i : 0
-          if size <= 0
-            size = insertion.length()
-          end
-          offset                = paging[:offset] ? paging[:offset].to_i : 0
-
-          insertion.each_with_index do |insertion_obj, index|
-            # TODO - this does not look performant.
-            break if @response_insertions.length() >= size
-            response_insertion = Hash[]
-            response_insertion[:content_id]   = insertion_obj[:content_id]
-            response_insertion[:position]     = offset + index
-            response_insertion[:insertion_id] = insertion_obj[:insertion_id]
-            @response_insertions << response_insertion.clean!
-          end
-          @response_insertions
         end
 
         def add_missing_insertion_ids! insertions

@@ -1,3 +1,9 @@
+# Run tests
+
+```
+bundle exec rspec
+```
+
 # Deploy
 
 1. Update version number.
