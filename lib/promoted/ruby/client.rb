@@ -177,22 +177,23 @@ module Promoted
             if should_apply_treatment(cohort_membership_to_log)
               # Call Delivery API to get insertions to use
               delivery_request_params = delivery_request_builder.delivery_request_params  
+              # Don't send shadow traffic if we've already tried normal traffic.
+              should_send_shadow_traffic = false
               begin
                 response = send_request(delivery_request_params, @delivery_endpoint, @delivery_timeout_millis, @delivery_api_key, headers)
                 @validator.validate_response!(response)
+                raise ValidationError.new("Response shoul be a Hash") if !response.is_a?(Hash)
+                response_insertions = response && response[:insertion] || []
+                insertions_from_delivery = (response != nil && !deliver_err);
               rescue  StandardError => err
                 # Currently we don't propagate errors to the SDK caller, but rather default to returning
                 # the request insertions.
                 deliver_err = true
                 @logger.error("Error calling delivery: " + err.message) if @logger
               end
-              should_send_shadow_traffic = false
             else
               should_send_shadow_traffic &&= @send_shadow_traffic_for_control
             end
-
-            insertions_from_delivery = (response != nil && !deliver_err);
-            response_insertions = response && response[:insertion] || []
           end
 
           should_send_shadow_traffic &&= should_send_as_shadow_traffic?
