@@ -6,7 +6,6 @@ git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
 gemspec
 
 group :development do
-    gem 'ruby-debug-ide', group: :development
     gem 'debase', '>= 0.2.5.beta2', group: :development
     gem 'jaro_winkler', group: :development
     gem 'solargraph', group: :development
