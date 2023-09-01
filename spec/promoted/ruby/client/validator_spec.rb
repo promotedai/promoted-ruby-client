@@ -103,16 +103,16 @@ RSpec.describe Promoted::Ruby::Client::Validator do
             expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /user_id/)
         end
     
-        it "validates correct log_user_id type" do
+        it "validates correct anon_user_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
-            dup_input[:request][:user_info][:log_user_id] = "5"
+            dup_input[:request][:user_info][:anon_user_id] = "5"
             expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
         end
 
-        it "validates incorrect log_user_id type" do
+        it "validates incorrect anon_user_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
-            dup_input[:request][:user_info][:log_user_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /log_user_id/)
+            dup_input[:request][:user_info][:anon_user_id] = 5
+            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /anon_user_id/)
         end
 
         it "validates correct is_internal_user type for false" do

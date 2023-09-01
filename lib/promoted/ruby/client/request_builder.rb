@@ -27,7 +27,7 @@ module Promoted
           @view_id                 = request[:view_id]
           @use_case                = Promoted::Ruby::Client::USE_CASES[request[:use_case]] || Promoted::Ruby::Client::USE_CASES['UNKNOWN_USE_CASE']
           @insertion               = request[:insertion] || []
-          @user_info               = request[:user_info] || { :user_id => nil, :log_user_id => nil}
+          @user_info               = request[:user_info] || { :user_id => nil, :anon_user_id => nil}
           @timing                  = request[:timing] || { :client_log_timestamp => (Time.now.to_f * 1000).to_i }
 
           # If the user didn't create a client request id, we do it for them.

@@ -12,7 +12,7 @@ module Promoted
                             :type => String
                         },
                         {
-                            :name => :log_user_id,
+                            :name => :anon_user_id,
                             :type => String
                         },
                         {
