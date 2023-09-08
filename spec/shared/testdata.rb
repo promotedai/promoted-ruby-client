@@ -1,6 +1,6 @@
 SAMPLE_INPUT =  {
   request: {
-    user_info: {user_id:  "912", log_user_id:  "91232"},
+    user_info: {user_id:  "912", anon_user_id:  "91232"},
     device: {
       device_type: "DESKTOP",
       ip_address: "127.0.0.1",
@@ -41,7 +41,7 @@ SAMPLE_INPUT =  {
 
 SAMPLE_INPUT_WITH_PROP =  {
   request: {
-    user_info: {user_id:  "912", log_user_id:  "91232"},
+    user_info: {user_id:  "912", anon_user_id:  "91232"},
     device: {
       device_type: "DESKTOP",
       ip_address: "127.0.0.1",
@@ -143,7 +143,7 @@ SAMPLE_INPUT_WITH_PROP =  {
 SAMPLE_INPUT_CAMEL = {
   "request": {
     "userInfo": {
-      "logUserId": "logUserId1"
+      "anonUserId": "anonUserId1"
     },
     "device": {
       "deviceType": "DESKTOP",

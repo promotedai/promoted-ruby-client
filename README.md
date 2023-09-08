@@ -63,7 +63,7 @@ Basic information about the request user.
 Field Name | Type | Optional? | Description
 ---------- | ---- | --------- | -----------
 ```:user_id``` | String | Yes | The platform user id, cleared from Promoted logs.
-```:log_user_id``` | String | Yes | A different user id (presumably a UUID) disconnected from the platform user id, good for working with unauthenticated users or implementing right-to-be-forgotten.
+```:anon_user_id``` | String | Yes | A different user id (presumably a UUID) disconnected from the platform user id, good for working with unauthenticated users or implementing right-to-be-forgotten.
 ```:is_internal_user``` | Boolean | Yes | If this user is a test user or not, defaults to false.
 
 ---
@@ -270,7 +270,7 @@ insertions = products.map { |product|
 # Form a MetricsRequest
 metrics_request = {
   :request => {
-    :user_info => { :user_id => "912", :log_user_id => "912191"},
+    :user_info => { :user_id => "912", :anon_user_id => "912191"},
     :use_case => "FEED",
     :paging => {
       :offset => 0,
@@ -306,7 +306,7 @@ client.send_log_request(client_response[:log_request]) if client_response[:log_r
 # Form a DeliveryRequest
 delivery_request = {
   :request => {
-    :user_info => { :user_id => "912", :log_user_id => "912191"},
+    :user_info => { :user_id => "912", :anon_user_id => "912191"},
     :use_case => "FEED",
     :paging => {
       :offset => 0,

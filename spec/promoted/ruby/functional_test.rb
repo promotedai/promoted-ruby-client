@@ -42,7 +42,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         # Form a MetricsRequest
         metrics_request = {
             :request => {
-            :user_info => { :user_id => "912", :log_user_id => "912191"},
+            :user_info => { :user_id => "912", :anon_user_id => "912191"},
             :use_case => "FEED",
             :paging => {
                 :offset => 0,
@@ -69,7 +69,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         # Form a DeliveryRequest
         delivery_request = {
             :request => {
-            :user_info => { :user_id => "912", :log_user_id => "912191"},
+            :user_info => { :user_id => "912", :anon_user_id => "912191"},
             :use_case => "FEED",
             :paging => {
                 :offset => 0,

@@ -31,7 +31,7 @@ RSpec.describe Promoted::Ruby::Client::LogRequestBuilder do
       expected = {
                   user_info:
                   {
-                    user_id: "912", log_user_id: "91232"
+                    user_id: "912", anon_user_id: "91232"
                   },
                   timing:
                   {

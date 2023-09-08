@@ -111,7 +111,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
           logging_json = response[:log_request]
           expect(logging_json[:user_info]).not_to be nil
           expect(logging_json[:user_info][:user_id]).to eq(input.dig(:request, :user_info, :user_id))
-          expect(logging_json[:user_info][:log_user_id]).to eq(input.dig(:request, :user_info, :log_user_id))
+          expect(logging_json[:user_info][:anon_user_id]).to eq(input.dig(:request, :user_info, :anon_user_id))
         end
 
         it "should have insertion" do
