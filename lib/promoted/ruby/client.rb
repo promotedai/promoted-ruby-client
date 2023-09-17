@@ -240,7 +240,6 @@ module Promoted
         ##
         # Creates response insertions for SDK-side delivery, when we don't get response insertions from Delivery API.
         def build_sdk_response_insertions delivery_request_builder
-          # TODO - remove INSERTION_PAGING_TYPE
           response_insertions = @pager.apply_paging(delivery_request_builder.insertion, @retrieval_insertion_offset, delivery_request_builder.request[:paging])
           delivery_request_builder.add_missing_insertion_ids! response_insertions
           return response_insertions
@@ -318,7 +317,6 @@ module Promoted
           delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
 
           begin
-            # TODO - maybe add here too?
             @pager.validate_paging(delivery_request_builder.insertion, @retrieval_insertion_offset, delivery_request_builder.request[:paging])
           rescue InvalidPagingError => err
             # Invalid input, log and skip.
