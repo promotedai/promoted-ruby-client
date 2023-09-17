@@ -39,6 +39,13 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     end
 
     context "validation on deliver" do
+      it "check passes" do
+        dup_input = Marshal.load(Marshal.dump(@input))
+        client = described_class.new
+        expect(client.perform_checks).to be true
+        expect { client.deliver(dup_input) }.not_to raise_error
+      end
+
       it "passes the request through the validator when perform checks" do
         dup_input = Marshal.load(Marshal.dump(@input))
         dup_input.delete :request
@@ -56,36 +63,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /contentId/)
       end
 
-      it "enforces unpaged insertions when perform checks" do
-        dup_input = Marshal.load(Marshal.dump(@input))
-        dup_input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
-        client = described_class.new
-        expect(client.perform_checks).to be true
-        expect { client.deliver(dup_input) }.to raise_error(Promoted::Ruby::Client::DeliveryInsertionPageType, /unpaged/)
-      end
-  
-      it "assumes unpaged insertions" do
-        dup_input = Marshal.load(Marshal.dump(@input))
-        client = described_class.new
-        expect(client.perform_checks).to be true
-        expect { client.deliver(dup_input) }.not_to raise_error
-      end
-  
-      it "allows explicit unpaged insertions" do
-        dup_input = Marshal.load(Marshal.dump(@input))
-        dup_input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
-        client = described_class.new
-        expect(client.perform_checks).to be true
-        expect { client.deliver(dup_input) }.not_to raise_error
-      end
-  
-      it "does not enforce unpaged insertions when no perform checks" do
-        dup_input = Marshal.load(Marshal.dump(@input))
-        dup_input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
-        client = described_class.new({ :perform_checks => false })
-        expect { client.deliver(dup_input) }.not_to raise_error
-      end
-  
       it "does not pass the request through the validator when no perform checks" do
         dup_input = Marshal.load(Marshal.dump(@input))
         dup_input.delete :request
@@ -242,48 +219,31 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
           dup_input
         end
 
-        let!(:input_with_unpaged) do
-          input_with_unpaged = Hash[SAMPLE_INPUT_WITH_PROP]
-          input_with_unpaged[:only_log] = true
-          input_with_unpaged[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
-          input_with_unpaged
+        let!(:dup_input_with_prop) do
+          dup_input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
+          dup_input_with_prop[:only_log] = true
+          dup_input_with_prop
         end
 
-        it "does not throw if shadow traffic is on and request is prepaged" do
-          dup_input            = Hash[input]
-          dup_input[:only_log] = true
-          dup_input["insertion_page_type"] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
-
-          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
-          expect(client).not_to receive(:send_request)
-          expect { client.deliver(dup_input) }.not_to raise_error
-        end
-
-        it "does not throw if shadow traffic is on and request paging type is undefined" do
-          client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
-          expect(client).not_to receive(:send_request)
-          expect { client.deliver(dup_input) }.not_to raise_error
-        end
-
-        it "paging type is not checked when perform checks is off" do
+        it "does not throw when perform_checks are off" do
           client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0, :perform_checks => false }))
           expect(client).to receive(:send_request)
           expect { client.deliver(dup_input) }.not_to raise_error
         end
 
         it "does not throw for invalid paging" do
-          input_with_unpaged[:request] = Hash[input_with_unpaged[:request]]
-          input_with_unpaged[:request][:paging] = { size: 2, offset: 1000 }
+          dup_input_with_prop[:request] = Hash[dup_input_with_prop[:request]]
+          dup_input_with_prop[:request][:paging] = { size: 2, offset: 1000 }
           client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
           expect(client).not_to receive(:send_request)
-          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+          expect { client.deliver(dup_input_with_prop) }.not_to raise_error
         end
 
         it "samples in" do
           srand(0)
           client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.6 }))
           expect(client).to receive(:send_request)
-          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+          expect { client.deliver(dup_input_with_prop) }.not_to raise_error
           client.close
         end
 
@@ -291,7 +251,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
           srand(0)
           client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 0.5 }))
           expect(client).not_to receive(:send_request)
-          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+          expect { client.deliver(dup_input_with_prop) }.not_to raise_error
         end
 
         it "works in a normal case" do
@@ -303,7 +263,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
             delivery_req = value
           }
 
-          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+          expect { client.deliver(dup_input_with_prop) }.not_to raise_error
           client.close
 
           expect(delivery_req.key?(:insertion)).to be true
@@ -333,7 +293,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
           logging_json = nil
           expect {
-            response = client.deliver(input_with_unpaged)
+            response = client.deliver(dup_input_with_prop)
             logging_json = response[:log_request]
           }.not_to raise_error
           expect(logging_json).not_to be nil
@@ -351,7 +311,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
           logging_json = nil
           expect {
-            response = client.deliver(input_with_unpaged)
+            response = client.deliver(dup_input_with_prop)
             logging_json = response[:log_request]
           }.not_to raise_error
           expect(logging_json).not_to be nil
@@ -367,7 +327,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
             recv_headers = headers
             recv_timeout = timeout
           }
-          expect { client.deliver(input_with_unpaged) }.not_to raise_error
+          expect { client.deliver(dup_input_with_prop) }.not_to raise_error
           client.close
 
           expect(recv_endpoint).to eq(ENDPOINTS[:delivery_endpoint])
@@ -421,7 +381,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         end
       end
 
-      it "preempts prepare_for_logging when disabled" do
+      it "skips logging when disabled" do
         client = described_class.new({ :enabled => false })
         response = client.deliver(input_with_only_log)
         expect(response[:log_request]).to be nil
@@ -660,7 +620,6 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
     it "delivers shadow traffic for control arm by default" do
       client = described_class.new(ENDPOINTS.merge({ :shadow_traffic_delivery_percent => 1.0 }))
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['CONTROL']
-      @input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
 
       delivery_req = nil
       expect(client).to receive(:send_request) {|value|
@@ -734,8 +693,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
 
       client = described_class.new({ :should_apply_treatment_func => should_apply_func, :shadow_traffic_delivery_percent => 1.0 })
       @input["experiment"]["arm"] = Promoted::Ruby::Client::COHORT_ARM['TREATMENT']
-      @input[:insertion_page_type] = Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED']
-
+ 
       delivery_req = nil
       expect(client).to receive(:send_request) {|value|
         delivery_req = value

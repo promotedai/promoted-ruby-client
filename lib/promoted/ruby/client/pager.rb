@@ -11,15 +11,21 @@ module Promoted
         end
         
         class Pager
-            def validate_paging(insertions, paging)
-              if paging && paging[:offset] && paging[:offset] >= insertions.length
-                raise InvalidPagingError.new("Invalid page offset (insertion size #{insertions.length}, offset #{paging[:offset]})", [])
+            def validate_paging(insertions, retrieval_insertion_offset, paging)
+              if paging && paging[:offset]
+                offset = [0, paging[:offset]].max
+                if offset >= insertions.length
+                  raise InvalidPagingError.new("Invalid page offset (insertion size #{insertions.length}, offset #{offset})", [])
+                end
+                if offset < retrieval_insertion_offset
+                  raise InvalidPagingError.new("Invalid page offset (retrieval_insertion_offset #{retrieval_insertion_offset}, offset #{offset})", [])
+                end
               end
             end
 
-            def apply_paging(insertions, insertion_page_type, paging = nil)
+            def apply_paging(insertions, retrieval_insertion_offset, paging = nil)
               begin
-                validate_paging(insertions, paging)
+                validate_paging(insertions, retrieval_insertion_offset, paging)
               rescue InvalidPagingError => err
                 # This is invalid input, stop it before it goes to the server.
                 return err.default_insertions_page
@@ -33,14 +39,8 @@ module Promoted
               end
 
               offset = [0, paging[:offset]].max
-
-              index = offset
-              if insertion_page_type == Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED']
-                # When insertions are pre-paged, we don't use offset to
-                # window into the provided insertions, although we do use it when
-                # assigning positions.
-                index = 0
-              end
+              retrieval_insertion_offset = [0, retrieval_insertion_offset].max
+              index = [0, offset - retrieval_insertion_offset].max
 
               size = paging[:size]
               if size <= 0

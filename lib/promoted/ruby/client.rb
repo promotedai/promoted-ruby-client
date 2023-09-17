@@ -54,6 +54,7 @@ module Promoted
 
           @sampler = Sampler.new
           @pager   = Pager.new
+          @retrieval_insertion_offset = params[:retrieval_insertion_offset] || 0
 
           # HTTP Client creation
           @delivery_endpoint = params[:delivery_endpoint] || DEFAULT_DELIVERY_ENDPOINT
@@ -119,7 +120,7 @@ module Promoted
           # Respect the enabled state
           if !@enabled
             return {
-              insertion: @pager.apply_paging(args[:request][:insertion], Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], args[:request][:paging])
+              insertion: @pager.apply_paging(args[:request][:insertion], @retrieval_insertion_offset, args[:request][:paging])
               # No log request returned when disabled
             }
           end
@@ -134,16 +135,6 @@ module Promoted
           # perform_checks raises errors.
           if @perform_checks
             perform_common_checks!(args)
-            if !only_log && args[:insertion_page_type] == Promoted::Ruby::Client::INSERTION_PAGING_TYPE['PRE_PAGED'] then
-              err = DeliveryInsertionPageType.new
-              @logger.error(err) if @logger
-              raise err
-            end
-
-            if should_send_shadow_traffic && args[:insertion_page_type] != Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'] then
-              should_send_shadow_traffic = false
-              @logger.error(ShadowTrafficInsertionPageType.new) if @logger
-            end
           end
 
           delivery_request_builder.ensure_client_timestamp
@@ -161,7 +152,7 @@ module Promoted
           end
 
           begin
-            @pager.validate_paging(delivery_request_builder.insertion, delivery_request_builder.request[:paging])
+            @pager.validate_paging(delivery_request_builder.insertion, @retrieval_insertion_offset, delivery_request_builder.request[:paging])
           rescue InvalidPagingError => err
             # Invalid input, log and do SDK-side delivery.
             @logger.warn(err) if @logger
@@ -234,7 +225,7 @@ module Promoted
         end
 
         ##
-        # Sends a log request (previously created by a call to prepare_for_logging) to the metrics endpoint.
+        # Sends a log request to the metrics endpoint.
         def send_log_request log_request_params, headers={}
           begin
             send_request(log_request_params, @metrics_endpoint, @metrics_timeout_millis, @metrics_api_key, headers)
@@ -249,7 +240,7 @@ module Promoted
         ##
         # Creates response insertions for SDK-side delivery, when we don't get response insertions from Delivery API.
         def build_sdk_response_insertions delivery_request_builder
-          response_insertions = @pager.apply_paging(delivery_request_builder.insertion, Promoted::Ruby::Client::INSERTION_PAGING_TYPE['UNPAGED'], delivery_request_builder.request[:paging])
+          response_insertions = @pager.apply_paging(delivery_request_builder.insertion, @retrieval_insertion_offset, delivery_request_builder.request[:paging])
           delivery_request_builder.add_missing_insertion_ids! response_insertions
           return response_insertions
         end
@@ -317,7 +308,7 @@ module Promoted
 
         # Delivers shadow traffic from the given metrics args.
         # Assumes that the args have already been normalized since this
-        # method should only be called from inside prepare_for_logging.
+        # method should only be called from inside deliver.
         def deliver_shadow_traffic args, headers
           delivery_request_builder = RequestBuilder.new
           delivery_request_builder.set_request_params args
@@ -326,7 +317,7 @@ module Promoted
           delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
 
           begin
-            @pager.validate_paging(delivery_request_builder.insertion, delivery_request_builder.request[:paging])
+            @pager.validate_paging(delivery_request_builder.insertion, @retrieval_insertion_offset, delivery_request_builder.request[:paging])
           rescue InvalidPagingError => err
             # Invalid input, log and skip.
             @logger.warn("Shadow traffic call failed with invalid paging #{err}") if @logger

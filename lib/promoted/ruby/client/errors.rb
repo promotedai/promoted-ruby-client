@@ -1,18 +1,6 @@
 module Promoted
   module Ruby
     module Client
-      class ShadowTrafficInsertionPageType < StandardError
-        def message
-          'Insertions must be unpaged when shadow traffic is on'
-        end
-      end
-
-      class DeliveryInsertionPageType < StandardError
-        def message
-          'Delivery insertions must be unpaged'
-        end
-      end
-
       class EndpointError < StandardError
         attr_reader :cause
         def initialize(cause)
