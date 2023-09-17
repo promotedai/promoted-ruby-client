@@ -14,9 +14,6 @@ module Promoted
                    'SELLER_CONTENT'=> 'SELLER_CONTENT',
                    'DISCOVER'=> 'DISCOVER'}
 
-      INSERTION_PAGING_TYPE = {'UNPAGED' => 'UNPAGED',
-                               'PRE_PAGED' => 'PRE_PAGED'}
-
       COHORT_ARM = {'UNKNOWN_GROUP' => 'UNKNOWN_GROUP',
                     'CONTROL' => 'CONTROL',
                     'TREATMENT' => 'TREATMENT',
