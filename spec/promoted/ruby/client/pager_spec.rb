@@ -124,9 +124,9 @@ RSpec.describe Promoted::Ruby::Client::Pager do
 
       pager = subject.class.new
       res = pager.apply_paging(@insertions, 1, paging)
-      expect(res.length).to eq @insertions.length
 
       # Expect 3 insertions back since the retrieved insertions start at 1 and the response insertion offset starts at 1.
+      expect(res.length).to eq @insertions.length
       expect(res[0][:insertion_id]).to eq @insertions[0][:insertion_id]
       expect(res[1][:insertion_id]).to eq @insertions[1][:insertion_id]
       expect(res[2][:insertion_id]).to eq @insertions[2][:insertion_id]
@@ -145,15 +145,33 @@ RSpec.describe Promoted::Ruby::Client::Pager do
 
       pager = subject.class.new
       res = pager.apply_paging(@insertions, 1, paging)
-      expect(res.length).to eq @insertions.length - 1
-
       # Expect 2 since size = 2.  Since retrieval_insertion_offset is 1 and offset is 1, the first insertion is the first insertion in the request list.
+      expect(res.length).to eq @insertions.length - 1
       expect(res[0][:insertion_id]).to eq @insertions[0][:insertion_id]
       expect(res[1][:insertion_id]).to eq @insertions[1][:insertion_id]
 
       # Positions start at offset.
       expect(res[0][:position]).to eq 1
       expect(res[1][:position]).to eq 2
+    end
+
+    it "pages a window when retrieval_insertion_offset > 0 and offset is larger" do
+      paging = {
+        :size => 2,
+        :offset => 10
+      }
+
+      pager = subject.class.new
+      res = pager.apply_paging(@insertions, 10, paging)
+
+      # Expect 2 since size = 2.  Since retrieval_insertion_offset is 1 and offset is 1, the first insertion is the first insertion in the request list.
+      expect(res.length).to eq @insertions.length - 1
+      expect(res[0][:insertion_id]).to eq @insertions[0][:insertion_id]
+      expect(res[1][:insertion_id]).to eq @insertions[1][:insertion_id]
+
+      # Positions start at offset.
+      expect(res[0][:position]).to eq 10
+      expect(res[1][:position]).to eq 11
     end
 
     it "returns everything when no paging provided" do
