@@ -13,24 +13,28 @@ module Promoted
         class Pager
             def validate_paging(insertions, retrieval_insertion_offset, paging)
               if paging && paging[:offset]
-                offset = [0, paging[:offset]].max
-                if offset >= insertions.length
-                  raise InvalidPagingError.new("Invalid page offset (insertion size #{insertions.length}, offset #{offset})", [])
-                end
-                if offset < retrieval_insertion_offset
-                  raise InvalidPagingError.new("Invalid page offset (retrieval_insertion_offset #{retrieval_insertion_offset}, offset #{offset})", [])
-                end
+                offset, retrieval_insertion_offset, index = _sanitize_offsets(retrieval_insertion_offset, paging)
+                _validate_paging(insertions, retrieval_insertion_offset, offset, index)
+              end
+            end
+
+            def _sanitize_offsets(retrieval_insertion_offset, paging)
+              offset = [0, paging[:offset]].max
+              retrieval_insertion_offset = [0, retrieval_insertion_offset].max
+              index = [0, offset - retrieval_insertion_offset].max
+              return [offset, retrieval_insertion_offset, index]
+            end
+
+            def _validate_paging(insertions, retrieval_insertion_offset, offset, index)
+              if offset < retrieval_insertion_offset
+                raise InvalidPagingError.new("Invalid page offset (retrieval_insertion_offset #{retrieval_insertion_offset}, offset #{offset})", [])
+              end
+              if index >= insertions.length
+                raise InvalidPagingError.new("Invalid page offset (insertion size #{insertions.length}, index #{index})", [])
               end
             end
 
             def apply_paging(insertions, retrieval_insertion_offset, paging = nil)
-              begin
-                validate_paging(insertions, retrieval_insertion_offset, paging)
-              rescue InvalidPagingError => err
-                # This is invalid input, stop it before it goes to the server.
-                return err.default_insertions_page
-              end
-
               if !paging
                 paging = {
                   :offset => 0,
@@ -38,9 +42,14 @@ module Promoted
                 }
               end
 
-              offset = [0, paging[:offset]].max
-              retrieval_insertion_offset = [0, retrieval_insertion_offset].max
-              index = [0, offset - retrieval_insertion_offset].max
+              offset, retrieval_insertion_offset, index = _sanitize_offsets(retrieval_insertion_offset, paging)
+
+              begin
+                _validate_paging(insertions, retrieval_insertion_offset, offset, index)
+              rescue InvalidPagingError => err
+                # This is invalid input, stop it before it goes to the server.
+                return err.default_insertions_page
+              end
 
               size = paging[:size]
               if size <= 0
