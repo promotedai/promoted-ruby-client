@@ -5,6 +5,17 @@ RSpec.describe Promoted::Ruby::Client::Validator do
     before(:all) { @v = described_class.new }
 
     context("delivery args") do
+        it "validates valid args" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
+        end
+
+        it "validates valid args w/ retrieval_insertion_offset" do
+            dup_input = Marshal.load(Marshal.dump(input))
+            dup_input[:retrieval_insertion_offset] = 2
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
+        end
+
         it "requires request" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input.delete :request
