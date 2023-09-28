@@ -182,6 +182,32 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
         end
       end
 
+      context "log_request with retrieval_insertion_offset" do
+        let!(:input_with_limit) do
+          dup_input                              = Hash[input]
+          dup_input[:only_log]                   = true
+          dup_input[:retrieval_insertion_offset] = 2
+          request                                = Hash[dup_input[:request]]
+          request[:paging]                       = { size: 2, offset: 2 }
+          dup_input[:request]                    = request
+          dup_input
+        end
+
+        it "should have insertion set" do
+          client = described_class.new ENDPOINTS
+          response = client.deliver(input_with_limit)
+          logging_json = response[:log_request]
+          expect(logging_json).not_to eq(nil)
+          expect(logging_json[:delivery_log].length()).to eq(1)
+          expect(logging_json[:delivery_log][0][:request][:paging][:size]).to eq(2)
+          expect(logging_json[:delivery_log][0][:response][:insertion]).not_to be_empty
+          expect(logging_json[:delivery_log][0][:response][:insertion].length).to eq(2)
+          # Since retrieval_insertion_offset is 2, we start at 2.
+          expect(logging_json[:delivery_log][0][:response][:insertion][0][:position]).to eq(2)
+          expect(logging_json[:delivery_log][0][:response][:insertion][1][:position]).to eq(3)
+        end
+      end
+
       context "extra fields at the top level on insertions" do
         let!(:input_with_prop) do
           input_with_prop = Hash[SAMPLE_INPUT_WITH_PROP]
@@ -401,7 +427,7 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       expect(recv_headers.key?("x-api-key")).to be true
       expect(recv_headers["x-api-key"]).to eq("my api key")
     end  
-        
+
     it "delivers in a good case" do
       client = described_class.new
       insertion = @input[:request][:insertion]
@@ -445,6 +471,31 @@ RSpec.describe Promoted::Ruby::Client::PromotedClient do
       client = described_class.new({ :max_request_insertions => 2 })
       insertion = @input[:request][:insertion]
       
+      delivery_req = nil
+      allow(client).to receive(:send_request) { |value|
+        delivery_req = value
+        { :insertion => insertion.slice(0, 2) }
+      }
+
+      deliver_resp = client.deliver @input
+      expect(deliver_resp).not_to be nil
+
+      # Validate the call occurred
+      expect(delivery_req).not_to be nil
+
+      # Key assertion is:
+      expect(delivery_req[:insertion].length).to eq 2
+    end
+
+    it "delivers respecting retrieval_insertion_offset" do
+      client = described_class.new({ :max_request_insertions => 2 })
+      insertion = @input[:request][:insertion]
+      # retrieval_insertion_offset == offset.  Then if there is
+      # an SDK fallback we will start from the beginning of the
+      # request insertion list.
+      @input[:retrieval_insertion_offset] = 2
+      @input[:request][:paging] = { size: 2, offset: 2 }
+
       delivery_req = nil
       allow(client).to receive(:send_request) { |value|
         delivery_req = value

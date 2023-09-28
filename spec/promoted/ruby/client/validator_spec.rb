@@ -4,23 +4,23 @@ RSpec.describe Promoted::Ruby::Client::Validator do
     let!(:input) { Promoted::Ruby::Client::Util.translate_hash(SAMPLE_INPUT_WITH_PROP) }
     before(:all) { @v = described_class.new }
 
-    context("metrics request") do
+    context("delivery args") do
         it "requires request" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input.delete :request
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request/)
         end
 
         it "requires insertion" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request].delete :insertion
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /insertion/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /insertion/)
         end
 
         it "validates correct insertion type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion] = {}
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /insertion/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /insertion/)
         end
     end
 
@@ -28,49 +28,49 @@ RSpec.describe Promoted::Ruby::Client::Validator do
         it "validates correct platform_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:platform_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect platform_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:platform_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /platform_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /platform_id/)
         end
 
         it "validates correct request_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:request_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect request_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:request_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request_id/)
         end
 
         it "validates correct view_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:view_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect view_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:view_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /view_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /view_id/)
         end
 
         it "validates correct session_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:view_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect session_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:session_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /session_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /session_id/)
         end
     end
 
@@ -94,49 +94,49 @@ RSpec.describe Promoted::Ruby::Client::Validator do
         it "validates correct user_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:user_info][:user_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect user_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:user_info][:user_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /user_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /user_id/)
         end
     
         it "validates correct anon_user_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:user_info][:anon_user_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect anon_user_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:user_info][:anon_user_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /anon_user_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /anon_user_id/)
         end
 
         it "validates correct is_internal_user type for false" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:user_info][:is_internal_user] = false
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates correct is_internal_user type for true" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:user_info][:is_internal_user] = true
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect is_internal_user type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:user_info][:is_internal_user] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /is_internal_user/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /is_internal_user/)
         end
 
         it "allows nil as a value on optional types" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:user_info][:user_id] = nil
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
     
     end
@@ -145,121 +145,121 @@ RSpec.describe Promoted::Ruby::Client::Validator do
         it "validates correct platform_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:platform_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect platform_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:platform_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /platform_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /platform_id/)
         end
        
         it "validates correct insertion_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:insertion_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect insertion_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:insertion_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /insertion_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /insertion_id/)
         end
        
         it "validates correct request_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:request_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect request_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:request_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /request_id/)
         end
        
         it "validates correct view_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:view_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect view_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:view_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /view_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /view_id/)
         end
        
         it "validates correct session_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:session_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect session_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:session_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /session_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /session_id/)
         end
        
         it "validates correct content_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:content_id] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect content_id type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:content_id] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /content_id/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /content_id/)
         end
        
         it "validates correct position type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:position] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect position type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:position] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /position/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /position/)
         end
        
         it "validates correct delivery_score type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:delivery_score] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect delivery_score type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:delivery_score] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /delivery_score/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /delivery_score/)
         end       
        
         it "validates correct retrieval_rank type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:retrieval_rank] = 5
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect retrieval_rank type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:retrieval_rank] = "5"
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /retrieval_rank/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /retrieval_rank/)
         end       
        
         it "validates correct retrieval_score type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:retrieval_score] = 5.2
-            expect { @v.validate_metrics_request!(dup_input) }.not_to raise_error
+            expect { @v.validate_delivery_args!(dup_input) }.not_to raise_error
         end
 
         it "validates incorrect retrieval_score type" do
             dup_input = Marshal.load(Marshal.dump(input))
             dup_input[:request][:insertion][0][:retrieval_score] = "5.2"
-            expect { @v.validate_metrics_request!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /retrieval_score/)
+            expect { @v.validate_delivery_args!(dup_input) }.to raise_error(Promoted::Ruby::Client::ValidationError, /retrieval_score/)
         end       
     end
 

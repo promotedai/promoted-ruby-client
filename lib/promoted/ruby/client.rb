@@ -54,7 +54,6 @@ module Promoted
 
           @sampler = Sampler.new
           @pager   = Pager.new
-          @retrieval_insertion_offset = params[:retrieval_insertion_offset] || 0
 
           # HTTP Client creation
           @delivery_endpoint = params[:delivery_endpoint] || DEFAULT_DELIVERY_ENDPOINT
@@ -116,11 +115,12 @@ module Promoted
         # Make a delivery request. If @perform_checks is set, input validation will occur and possibly raise errors.
         def deliver args, headers={}
           args = Promoted::Ruby::Client::Util.translate_hash(args)
+          retrieval_insertion_offset = args[:retrieval_insertion_offset] || 0
 
           # Respect the enabled state
           if !@enabled
             return {
-              insertion: @pager.apply_paging(args[:request][:insertion], @retrieval_insertion_offset, args[:request][:paging])
+              insertion: @pager.apply_paging(args[:request][:insertion], retrieval_insertion_offset, args[:request][:paging])
               # No log request returned when disabled
             }
           end
@@ -152,7 +152,7 @@ module Promoted
           end
 
           begin
-            @pager.validate_paging(delivery_request_builder.insertion, @retrieval_insertion_offset, delivery_request_builder.request[:paging])
+            @pager.validate_paging(delivery_request_builder.insertion, retrieval_insertion_offset, delivery_request_builder.request[:paging])
           rescue InvalidPagingError => err
             # Invalid input, log and do SDK-side delivery.
             @logger.warn(err) if @logger
@@ -194,7 +194,7 @@ module Promoted
           end
 
           if !insertions_from_delivery then
-            response_insertions = build_sdk_response_insertions(delivery_request_builder)
+            response_insertions = build_sdk_response_insertions(delivery_request_builder, retrieval_insertion_offset)
           end
 
           log_req = nil
@@ -239,8 +239,8 @@ module Promoted
 
         ##
         # Creates response insertions for SDK-side delivery, when we don't get response insertions from Delivery API.
-        def build_sdk_response_insertions delivery_request_builder
-          response_insertions = @pager.apply_paging(delivery_request_builder.insertion, @retrieval_insertion_offset, delivery_request_builder.request[:paging])
+        def build_sdk_response_insertions delivery_request_builder, retrieval_insertion_offset
+          response_insertions = @pager.apply_paging(delivery_request_builder.insertion, retrieval_insertion_offset, delivery_request_builder.request[:paging])
           delivery_request_builder.add_missing_insertion_ids! response_insertions
           return response_insertions
         end
@@ -317,7 +317,7 @@ module Promoted
           delivery_request_params[:client_info][:traffic_type] = Promoted::Ruby::Client::TRAFFIC_TYPE['SHADOW']
 
           begin
-            @pager.validate_paging(delivery_request_builder.insertion, @retrieval_insertion_offset, delivery_request_builder.request[:paging])
+            @pager.validate_paging(delivery_request_builder.insertion, args[:retrieval_insertion_offset], delivery_request_builder.request[:paging])
           rescue InvalidPagingError => err
             # Invalid input, log and skip.
             @logger.warn("Shadow traffic call failed with invalid paging #{err}") if @logger
@@ -344,11 +344,11 @@ module Promoted
           end
         end
 
-        def perform_common_checks!(req)
+        def perform_common_checks!(delivery_args)
           begin
-            @validator.check_that_log_ids_not_set!(req)
-            @validator.validate_metrics_request!(req)
-            @validator.check_that_content_ids_are_set!(req)
+            @validator.check_that_log_ids_not_set!(delivery_args)
+            @validator.validate_delivery_args!(delivery_args)
+            @validator.check_that_content_ids_are_set!(delivery_args)
           rescue StandardError => err
             @logger.error(err) if @logger
             raise

@@ -135,7 +135,7 @@ module Promoted
             end
 
             # TODO - delete?
-            def validate_metrics_request!(metrics_req)
+            def validate_delivery_args!(metrics_req)
                 validate_fields!(
                     metrics_req,
                     "metrics request",
@@ -143,6 +143,10 @@ module Promoted
                         {
                             :name => :request,
                             :required => true
+                        },
+                        {
+                            :name => :retrieval_insertion_offset,
+                            :type => Integer
                         }
                     ]
                 )
