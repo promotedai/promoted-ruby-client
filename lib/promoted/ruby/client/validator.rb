@@ -18,6 +18,10 @@ module Promoted
                         {
                             :name => :is_internal_user,
                             :type => [TrueClass, FalseClass]
+                        },
+                        {
+                            :name => :ignore_usage,
+                            :type => [TrueClass, FalseClass]
                         }
                     ]
                 )
