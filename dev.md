@@ -11,4 +11,4 @@ bundle exec rspec
 3. Modify `promoted-ruby-client.gemspec`'s push block.
 4. Run `gem build promoted-ruby-client.gemspec` to generate `gem`.
 5. Run `bundle exec rspec`.  This updates `Gemfile.lock`.
-6. Run (using new output) `gem push promoted-ruby-client-5.0.0.gem`
+6. Run (using new output) `gem push promoted-ruby-client-5.1.0.gem`
