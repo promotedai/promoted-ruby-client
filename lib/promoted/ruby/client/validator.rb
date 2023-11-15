@@ -102,6 +102,10 @@ module Promoted
                             :type => String
                         },
                         {
+                            :name => :disable_personalization,
+                            :type => [TrueClass, FalseClass]
+                        },
+                        {
                             :name => :insertion,
                             :required => true,
                             :type => Array
